@@ -16,7 +16,7 @@
   - [ ] UI追加: `npm install @ionic/pwa-elements`
 - [x] Capacitorプラットフォームの追加
   - [x] `ionic capacitor add ios`
-  - [ ] `ionic capacitor add android`(現状は未対応)
+  - `ionic capacitor add android`(現状は未対応)
 - [x] ESLint/Prettier設定
   - [x] `.eslintrc.json`の作成
   - [x] `.prettierrc`の作成
