@@ -5,7 +5,7 @@
 ```mermaid
 graph TB
     subgraph "モバイル端末"
-        A[Ionic アプリ<br/>Angular 17 + Capacitor 7]
+        A[Ionic アプリ<br/>Angular 19 + Capacitor 7]
         A1[WebView層]
         A2[ネイティブ層]
         A --> A1

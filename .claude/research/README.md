@@ -55,8 +55,8 @@
 すべての要求機能は既存技術で実装可能です。
 
 ### 🔧 主要技術（すべてTypeScript/Node.js）
-- **フロントエンド**: Ionic 7 + Angular 17 + Capacitor 7
-- **バックエンド**: Node.js + TypeScript + ssh2 + Socket.io
+- **フロントエンド**: Ionic 8.6 + Angular 19 + Capacitor 7
+- **バックエンド**: Node.js + TypeScript 5.8 + Express 5 + ssh2 + Socket.io
 - **インフラ**: tmux + Git worktrees
 
 ### 📱 主要機能

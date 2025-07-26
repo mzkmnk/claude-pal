@@ -5,11 +5,11 @@
 ### コアフレームワーク
 ```json
 {
-  "@ionic/angular": "^7.7.0",
-  "@angular/core": "^17.1.0",
-  "@angular/common": "^17.1.0",
-  "@angular/forms": "^17.1.0",
-  "@angular/router": "^17.1.0",
+  "@ionic/angular": "^8.6.5",
+  "@angular/core": "^19.1.2",
+  "@angular/common": "^19.1.2",
+  "@angular/forms": "^19.1.2",
+  "@angular/router": "^19.1.2",
   "@capacitor/core": "^7.0.0",
   "@capacitor/ios": "^7.0.0",
   "@capacitor/android": "^7.0.0"
@@ -19,10 +19,10 @@
 ### 状態管理
 ```json
 {
-  "@ngrx/store": "^17.1.0",
-  "@ngrx/effects": "^17.1.0",
-  "@ngrx/entity": "^17.1.0",
-  "@ngrx/store-devtools": "^17.1.0"
+  "@ngrx/store": "^19.2.1",
+  "@ngrx/effects": "^19.2.1",
+  "@ngrx/entity": "^19.2.1",
+  "@ngrx/store-devtools": "^19.2.1"
 }
 ```
 
@@ -57,9 +57,9 @@
 ```json
 {
   "rxjs": "^7.8.1",
-  "date-fns": "^2.30.0",
+  "date-fns": "^3.6.0",
   "lodash-es": "^4.17.21",
-  "uuid": "^9.0.1"
+  "uuid": "^10.0.0"
 }
 ```
 
@@ -68,12 +68,12 @@
 ### コアライブラリ
 ```json
 {
-  "express": "^4.19.0",
+  "express": "^5.1.0",
   "socket.io": "^4.8.1",
   "cors": "^2.8.5",
-  "helmet": "^7.1.0",
-  "compression": "^1.7.4",
-  "typescript": "^5.3.3"
+  "helmet": "^8.0.0",
+  "compression": "^1.7.5",
+  "typescript": "^5.8.3"
 }
 ```
 
@@ -99,7 +99,7 @@
 ### プッシュ通知
 ```json
 {
-  "firebase-admin": "^12.0.0",
+  "firebase-admin": "^13.3.0",
   "node-pushnotifications": "^2.0.3"
 }
 ```
@@ -129,47 +129,48 @@
 ```json
 {
   "@ionic/cli": "^7.2.0",
-  "@angular/cli": "^17.1.0",
-  "typescript": "^5.3.3",
-  "webpack": "^5.90.0",
-  "@types/node": "^20.11.0"
+  "@angular/cli": "^19.1.2",
+  "typescript": "^5.8.3",
+  "webpack": "^5.95.0",
+  "@types/node": "^22.9.0"
 }
 ```
 
 ### テスティング
 ```json
 {
-  "@angular/core/testing": "^17.1.0",
-  "jasmine-core": "^5.1.2",
-  "karma": "^6.4.3",
+  "@angular/core/testing": "^19.1.2",
+  "jasmine-core": "^5.4.0",
+  "karma": "^6.4.4",
   "karma-jasmine": "^5.1.0",
   "karma-chrome-launcher": "^3.2.0",
   "@types/jasmine": "^5.1.4",
   "jest": "^29.7.0",
-  "@types/jest": "^29.5.11"
+  "@types/jest": "^29.5.14"
 }
 ```
 
 ### リンティング・フォーマッティング
 ```json
 {
-  "eslint": "^8.56.0",
-  "@typescript-eslint/parser": "^6.19.0",
-  "@typescript-eslint/eslint-plugin": "^6.19.0",
-  "prettier": "^3.2.4",
-  "husky": "^9.0.0",
-  "lint-staged": "^15.2.0"
+  "eslint": "^9.14.0",
+  "@typescript-eslint/parser": "^8.15.0",
+  "@typescript-eslint/eslint-plugin": "^8.15.0",
+  "prettier": "^3.3.3",
+  "husky": "^9.1.6",
+  "lint-staged": "^15.2.10"
 }
 ```
 
 ## システム要件
 
 ### 開発環境
-- Node.js 20.x以上（LTS推奨）
+- Node.js 20.x以上（Angular 19はNode.js 18以上必須）
 - npm 10.x以上 または yarn 1.22.x以上
 - Ionic CLI 7.x
-- Android Studio Iguana以上（Android開発の場合）
+- Android Studio Koala以上（Android開発の場合）
 - Xcode 15+（iOS開発の場合）
+- TypeScript 5.8以上（Angular 19必須）
 
 ### サーバー環境
 - Linux (Ubuntu 20.04+ 推奨) または macOS
