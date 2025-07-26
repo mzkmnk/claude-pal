@@ -54,6 +54,16 @@
     - 新機能（Signals、Zonelessモード）
     - 非推奨機能とマイグレーションガイド
 
+11. **[10_repository_structure.md](./10_repository_structure.md)**
+    - モノレポ構成の提案
+    - Nxを使用したプロジェクト管理（Ionic/Express対応確認済み）
+    - ディレクトリ構造とパッケージ戦略
+
+12. **[11_architecture_comparison.md](./11_architecture_comparison.md)**
+    - 直接SSH vs バックエンドサーバー経由の比較
+    - 各アプローチのメリット・デメリット
+    - 推奨シナリオとハイブリッドアプローチ
+
 ## 調査結果の要点
 
 ### ✅ 実現可能
