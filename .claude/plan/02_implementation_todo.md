@@ -17,7 +17,7 @@
 - [ ] Capacitorプラットフォームの追加
   - [ ] `ionic capacitor add ios`
   - [ ] `ionic capacitor add android`(現状は未対応)
-- [ ] ESLint/Prettier設定
+- [x] ESLint/Prettier設定
   - [x] `.eslintrc.json`の作成
   - [x] `.prettierrc`の作成
   - [x] pre-commitフックの設定

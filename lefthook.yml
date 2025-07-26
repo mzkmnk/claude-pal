@@ -1,0 +1,14 @@
+pre-push:
+  commands:
+    linter:
+      run: npm run lint
+    prettier:
+      run: npm run format:check
+    build:
+      run: npm run build
+
+pre-commit:
+  commands:
+    format:
+      glob: "*.{ts,html,scss,json}"
+      run: npx prettier --write {staged_files} && git add {staged_files}
