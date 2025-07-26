@@ -5,7 +5,7 @@
 ### 環境構築
 - [x] Ionic CLIのインストール確認
 - [x] Node.js 20.x のインストール確認
-- [ ] 新規Ionicプロジェクトの作成
+- [x] 新規Ionicプロジェクトの作成
   - [x] `ionic start claude-pal tabs --type=angular --capacitor`
   - [x] プロジェクトディレクトリへ移動
   - [x] 初期ビルドの確認
@@ -14,8 +14,8 @@
   - [ ] ターミナル: `npm install xterm xterm-addon-fit xterm-addon-web-links`
   - [ ] セキュリティ: `npm install crypto-js`
   - [ ] UI追加: `npm install @ionic/pwa-elements`
-- [ ] Capacitorプラットフォームの追加
-  - [ ] `ionic capacitor add ios`
+- [x] Capacitorプラットフォームの追加
+  - [x] `ionic capacitor add ios`
   - [ ] `ionic capacitor add android`(現状は未対応)
 - [x] ESLint/Prettier設定
   - [x] `.eslintrc.json`の作成
