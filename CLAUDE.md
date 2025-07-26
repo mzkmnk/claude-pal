@@ -4,17 +4,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-This is currently an empty project directory with no codebase structure established yet. 
+Claude PAL - モバイル端末からSSH経由でClaude Codeを操作するIonicアプリケーション
 
-When the project is initialized, this file should be updated with:
-1. Commands for building, linting, and testing
-2. High-level architecture and code structure
-3. Key development workflows specific to this project
+### プロジェクト概要
+- **目的**: SSH鍵の安全な管理とClaude Code用に最適化されたターミナルUIの提供
+- **技術スタック**: Ionic 8.6 + Angular 20 + Capacitor 7.4
+- **対応プラットフォーム**: iOS、Android、Web（PWA）
 
-Until then, Claude Code should help with:
-- Setting up the initial project structure
-- Choosing appropriate frameworks and tools
-- Creating the foundational architecture
+### 実装計画とタスク管理
+
+**重要**: 実装を進める際は、以下のTODOファイルを参照し、完了したタスクにチェックを付けてください。
+
+1. **アーキテクチャと技術スタック**: `.claude/plan/01_architecture_and_tech_stack.md`
+2. **実装TODO**: `.claude/plan/02_implementation_todo.md`
+3. **クイックスタート**: `.claude/plan/03_quick_start_guide.md`
+
+#### タスク完了時の更新方法
+```bash
+# TODOファイルを編集して、完了したタスクにチェックを付ける
+# 例: - [ ] タスク名 → - [x] タスク名
+```
+
+### ビルドコマンド
+```bash
+# 開発サーバー起動
+ionic serve
+
+# iOS向けビルド
+ionic capacitor build ios
+
+# Android向けビルド
+ionic capacitor build android
+
+# テスト実行
+npm test
+
+# リント
+npm run lint
+```
+
+### ディレクトリ構造
+- `src/app/core/` - コアサービス（SSH、鍵管理など）
+- `src/app/shared/` - 共有コンポーネント
+- `src/app/features/` - 機能別モジュール
+- `.claude/plan/` - 実装計画書
+- `.claude/research/` - 技術調査資料
 
 ## コーディング規約
 
