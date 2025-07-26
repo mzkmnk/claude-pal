@@ -29,7 +29,7 @@ graph TB
     subgraph "ユーザー環境"
         MAC[Mac/Linux]
         CLAUDE[Claude Code]
-        NET[ネットワーク設定<br/>(Tailscale/VPN等)]
+        NET[ネットワーク設定]
     end
     
     CHAT --> SSH
@@ -41,7 +41,7 @@ graph TB
     KEYSTORE --> SECURE
     SECURE --> BIO
     
-    SSH -.->|ユーザー設定の<br/>接続情報| NET
+    SSH -.->|ユーザー設定の接続情報| NET
     NET --> MAC
     MAC --> CLAUDE
     
@@ -187,7 +187,7 @@ sequenceDiagram
     App->>Key: SSH鍵取得
     Key-->>App: 秘密鍵
     App->>SSH: 接続試行
-    Note over SSH: ユーザー設定の<br/>ホスト名で接続
+    Note over SSH: ユーザー設定のホスト名で接続
     SSH->>Mac: SSH接続確立
     Mac-->>SSH: 接続成功
     SSH-->>App: セッション確立
