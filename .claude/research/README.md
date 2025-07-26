@@ -49,13 +49,18 @@
    - システム全体図、データフロー図
    - セキュリティ、パフォーマンス最適化図
 
+10. **[09_angular20_notes.md](./09_angular20_notes.md)**
+    - Angular 20の重要な変更点と注意事項
+    - 新機能（Signals、Zonelessモード）
+    - 非推奨機能とマイグレーションガイド
+
 ## 調査結果の要点
 
 ### ✅ 実現可能
 すべての要求機能は既存技術で実装可能です。
 
 ### 🔧 主要技術（すべてTypeScript/Node.js）
-- **フロントエンド**: Ionic 8.6 + Angular 19 + Capacitor 7
+- **フロントエンド**: Ionic 8.6 + Angular 20 + Capacitor 7.4
 - **バックエンド**: Node.js + TypeScript 5.8 + Express 5 + ssh2 + Socket.io
 - **インフラ**: tmux + Git worktrees
 

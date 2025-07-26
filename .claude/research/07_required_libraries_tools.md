@@ -6,13 +6,13 @@
 ```json
 {
   "@ionic/angular": "^8.6.5",
-  "@angular/core": "^19.1.2",
-  "@angular/common": "^19.1.2",
-  "@angular/forms": "^19.1.2",
-  "@angular/router": "^19.1.2",
-  "@capacitor/core": "^7.0.0",
-  "@capacitor/ios": "^7.0.0",
-  "@capacitor/android": "^7.0.0"
+  "@angular/core": "^20.1.3",
+  "@angular/common": "^20.1.3",
+  "@angular/forms": "^20.1.3",
+  "@angular/router": "^20.1.3",
+  "@capacitor/core": "^7.4.2",
+  "@capacitor/ios": "^7.4.2",
+  "@capacitor/android": "^7.4.2"
 }
 ```
 
@@ -99,7 +99,7 @@
 ### プッシュ通知
 ```json
 {
-  "firebase-admin": "^13.3.0",
+  "firebase-admin": "^13.4.0",
   "node-pushnotifications": "^2.0.3"
 }
 ```
@@ -129,7 +129,7 @@
 ```json
 {
   "@ionic/cli": "^7.2.0",
-  "@angular/cli": "^19.1.2",
+  "@angular/cli": "^20.1.3",
   "typescript": "^5.8.3",
   "webpack": "^5.95.0",
   "@types/node": "^22.9.0"
@@ -139,7 +139,7 @@
 ### テスティング
 ```json
 {
-  "@angular/core/testing": "^19.1.2",
+  "@angular/core/testing": "^20.1.3",
   "jasmine-core": "^5.4.0",
   "karma": "^6.4.4",
   "karma-jasmine": "^5.1.0",
@@ -165,12 +165,12 @@
 ## システム要件
 
 ### 開発環境
-- Node.js 20.x以上（Angular 19はNode.js 18以上必須）
+- Node.js 20.x以上（Angular 20はNode.js 20以上必須）
 - npm 10.x以上 または yarn 1.22.x以上
 - Ionic CLI 7.x
 - Android Studio Koala以上（Android開発の場合）
 - Xcode 15+（iOS開発の場合）
-- TypeScript 5.8以上（Angular 19必須）
+- TypeScript 5.8以上（Angular 20必須）
 
 ### サーバー環境
 - Linux (Ubuntu 20.04+ 推奨) または macOS
