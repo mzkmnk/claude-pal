@@ -1,0 +1,78 @@
+# Claude PAL 技術調査
+
+このディレクトリには、モバイル端末からClaude Codeを操作するアプリケーション「Claude PAL」の技術調査結果が含まれています。
+
+## 調査ドキュメント一覧
+
+1. **[00_summary.md](./00_summary.md)**
+   - 技術調査の全体サマリー
+   - 実現可能性の結論
+   - 推奨技術スタックと開発計画
+
+2. **[01_architecture_overview.md](./01_architecture_overview.md)**
+   - システムアーキテクチャの概要
+   - 主要コンポーネントの説明
+   - 技術的課題と解決策
+
+3. **[02_ssh_claude_code_integration.md](./02_ssh_claude_code_integration.md)**
+   - SSH接続技術の詳細
+   - Claude Code操作の実装方法
+   - PTY（擬似端末）の使用方法
+
+4. **[03_file_browser_github_operations.md](./03_file_browser_github_operations.md)**
+   - リモートファイルシステムの操作
+   - GitHub統合機能
+   - ファイルブラウザーUI実装
+
+5. **[04_multiple_processes_worktrees.md](./04_multiple_processes_worktrees.md)**
+   - Git worktreesを使用した並列作業
+   - 複数Claude Codeインスタンス管理
+   - tmuxによるセッション管理
+
+6. **[05_push_notifications.md](./05_push_notifications.md)**
+   - プッシュ通知の実装方法
+   - Firebase Cloud Messaging統合
+   - Claude Code完了検知
+
+7. **[06_ionic_application_architecture.md](./06_ionic_application_architecture.md)**
+   - Ionicアプリケーション構成
+   - UIコンポーネント設計
+   - 状態管理とパフォーマンス最適化
+
+8. **[07_required_libraries_tools.md](./07_required_libraries_tools.md)**
+   - 必要なライブラリ一覧（2025年1月最新版）
+   - 開発ツールとシステム要件
+   - インストール手順
+
+9. **[08_architecture_diagrams.md](./08_architecture_diagrams.md)**
+   - Mermaidで作成したアーキテクチャ図
+   - システム全体図、データフロー図
+   - セキュリティ、パフォーマンス最適化図
+
+## 調査結果の要点
+
+### ✅ 実現可能
+すべての要求機能は既存技術で実装可能です。
+
+### 🔧 主要技術（すべてTypeScript/Node.js）
+- **フロントエンド**: Ionic 7 + Angular 17 + Capacitor 7
+- **バックエンド**: Node.js + TypeScript + ssh2 + Socket.io
+- **インフラ**: tmux + Git worktrees
+
+### 📱 主要機能
+1. Claude Codeへの快適なメッセージ送信
+2. SSH接続先のファイル/フォルダ確認
+3. GitHub操作のGUI化
+4. 複数プロジェクトの並列作業
+5. タスク完了時のプッシュ通知
+
+### 🚀 推奨開発アプローチ
+段階的な開発（フェーズ1〜4）で実装。
+
+## 次のステップ
+
+1. このドキュメントをレビューして、技術選択を確定
+2. プロトタイプ開発の開始
+3. 詳細設計書の作成
+
+質問や追加調査が必要な項目があれば、お知らせください。
