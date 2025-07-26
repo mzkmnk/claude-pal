@@ -64,6 +64,16 @@
     - 各アプローチのメリット・デメリット
     - 推奨シナリオとハイブリッドアプローチ
 
+13. **[12_leveraging_existing_ssh_apps.md](./12_leveraging_existing_ssh_apps.md)**
+    - 既存SSHアプリ（Termius、Blink Shell等）の活用
+    - URL SchemeとShortcuts統合
+    - UI/UX特化型アプローチの提案
+
+14. **[13_simplified_architecture.md](./13_simplified_architecture.md)**
+    - 簡素化されたアーキテクチャ設計
+    - 最小限の実装で最大の価値を提供
+    - 6週間での開発計画
+
 ## 調査結果の要点
 
 ### ✅ 実現可能
@@ -82,7 +92,9 @@
 5. タスク完了時のプッシュ通知
 
 ### 🚀 推奨開発アプローチ
-段階的な開発（フェーズ1〜4）で実装。
+1. **最新提案**: 既存SSHアプリ（Termius等）を活用し、UI/UX開発に集中
+2. 段階的な開発で6週間以内に完成可能
+3. ネイティブSSH実装の複雑性を回避
 
 ## 次のステップ
 
