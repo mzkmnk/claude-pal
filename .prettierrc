@@ -12,7 +12,7 @@
     {
       "files": "*.html",
       "options": {
-        "parser": "angular"
+        "parser": "html"
       }
     }
   ]

@@ -11,7 +11,6 @@
     </ion-toolbar>
   </ion-header>
 
-
   <ion-segment [(ngModel)]="selectedTab" mode="md">
     <ion-segment-button value="profile">
       <ion-label>プロファイル</ion-label>
@@ -27,7 +26,6 @@
     </ion-segment-button>
   </ion-segment>
 
-
   <div *ngIf="selectedTab === 'profile'">
     <ion-card>
       <ion-card-header>
@@ -36,20 +34,37 @@
       <ion-card-content>
         <ion-list>
           <ion-item>
-            <ion-input [(ngModel)]="newProfile.name" label="プロファイル名" labelPlacement="floating"
-              placeholder="My Server"></ion-input>
+            <ion-input
+              [(ngModel)]="newProfile.name"
+              label="プロファイル名"
+              labelPlacement="floating"
+              placeholder="My Server"
+            ></ion-input>
           </ion-item>
           <ion-item>
-            <ion-input [(ngModel)]="newProfile.host" label="ホスト" labelPlacement="floating"
-              placeholder="example.com"></ion-input>
+            <ion-input
+              [(ngModel)]="newProfile.host"
+              label="ホスト"
+              labelPlacement="floating"
+              placeholder="example.com"
+            ></ion-input>
           </ion-item>
           <ion-item>
-            <ion-input [(ngModel)]="newProfile.port" label="ポート" labelPlacement="floating" type="number"
-              placeholder="22"></ion-input>
+            <ion-input
+              [(ngModel)]="newProfile.port"
+              label="ポート"
+              labelPlacement="floating"
+              type="number"
+              placeholder="22"
+            ></ion-input>
           </ion-item>
           <ion-item>
-            <ion-input [(ngModel)]="newProfile.username" label="ユーザー名" labelPlacement="floating"
-              placeholder="user"></ion-input>
+            <ion-input
+              [(ngModel)]="newProfile.username"
+              label="ユーザー名"
+              labelPlacement="floating"
+              placeholder="user"
+            ></ion-input>
           </ion-item>
         </ion-list>
         <ion-button expand="block" (click)="saveProfile()">
@@ -68,15 +83,26 @@
           <ion-item *ngFor="let profile of profiles">
             <ion-label>
               <h2>{{ profile.name }}</h2>
-              <p>{{ profile.username }}@{{ profile.host }}:{{ profile.port }}</p>
+              <p>
+                {{ profile.username }}@{{ profile.host }}:{{ profile.port }}
+              </p>
               <p *ngIf="profile.lastUsed">
                 最終使用: {{ profile.lastUsed | date:'short' }}
               </p>
             </ion-label>
-            <ion-button slot="end" fill="clear" (click)="markProfileAsUsed(profile)">
+            <ion-button
+              slot="end"
+              fill="clear"
+              (click)="markProfileAsUsed(profile)"
+            >
               <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
             </ion-button>
-            <ion-button slot="end" fill="clear" color="danger" (click)="deleteProfile(profile)">
+            <ion-button
+              slot="end"
+              fill="clear"
+              color="danger"
+              (click)="deleteProfile(profile)"
+            >
               <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
             </ion-button>
           </ion-item>
@@ -84,7 +110,6 @@
       </ion-card-content>
     </ion-card>
   </div>
-
 
   <div *ngIf="selectedTab === 'settings' && settings">
     <ion-card>
@@ -95,7 +120,10 @@
         <ion-list>
           <ion-item>
             <ion-label>テーマ</ion-label>
-            <ion-segment [value]="settings.theme" (ionChange)="updateTheme($event)">
+            <ion-segment
+              [value]="settings.theme"
+              (ionChange)="updateTheme($event)"
+            >
               <ion-segment-button value="light">
                 <ion-label>ライト</ion-label>
               </ion-segment-button>
@@ -109,7 +137,10 @@
           </ion-item>
           <ion-item>
             <ion-label>生体認証</ion-label>
-            <ion-toggle [checked]="settings.security.biometricAuthEnabled" (ionChange)="toggleBiometric()"></ion-toggle>
+            <ion-toggle
+              [checked]="settings.security.biometricAuthEnabled"
+              (ionChange)="toggleBiometric()"
+            ></ion-toggle>
           </ion-item>
           <ion-item>
             <ion-label>
@@ -123,7 +154,9 @@
             <ion-label>
               <h2>接続設定</h2>
               <p>タイムアウト: {{ settings.connectionSettings.timeout }}秒</p>
-              <p>デフォルトポート: {{ settings.connectionSettings.defaultPort }}</p>
+              <p>
+                デフォルトポート: {{ settings.connectionSettings.defaultPort }}
+              </p>
             </ion-label>
           </ion-item>
         </ion-list>
@@ -135,7 +168,6 @@
     </ion-card>
   </div>
 
-
   <div *ngIf="selectedTab === 'encryption'">
     <ion-card>
       <ion-card-header>
@@ -144,12 +176,22 @@
       <ion-card-content>
         <ion-list>
           <ion-item>
-            <ion-textarea [(ngModel)]="encryptData.plainText" label="平文" labelPlacement="floating"
-              placeholder="暗号化するテキスト" [rows]="3"></ion-textarea>
+            <ion-textarea
+              [(ngModel)]="encryptData.plainText"
+              label="平文"
+              labelPlacement="floating"
+              placeholder="暗号化するテキスト"
+              [rows]="3"
+            ></ion-textarea>
           </ion-item>
           <ion-item>
-            <ion-input [(ngModel)]="encryptData.password" label="パスワード" labelPlacement="floating" type="password"
-              placeholder="暗号化パスワード"></ion-input>
+            <ion-input
+              [(ngModel)]="encryptData.password"
+              label="パスワード"
+              labelPlacement="floating"
+              type="password"
+              placeholder="暗号化パスワード"
+            ></ion-input>
           </ion-item>
         </ion-list>
 
@@ -158,7 +200,11 @@
           暗号化
         </ion-button>
 
-        <ion-button expand="block" color="secondary" (click)="generatePassword()">
+        <ion-button
+          expand="block"
+          color="secondary"
+          (click)="generatePassword()"
+        >
           <ion-icon slot="start" name="key-outline"></ion-icon>
           パスワード生成
         </ion-button>
@@ -169,25 +215,39 @@
 
         <ion-list *ngIf="encryptData.encrypted">
           <ion-item>
-            <ion-textarea [(ngModel)]="encryptData.encrypted" label="暗号化結果" labelPlacement="floating" [rows]="3"
-              readonly></ion-textarea>
+            <ion-textarea
+              [(ngModel)]="encryptData.encrypted"
+              label="暗号化結果"
+              labelPlacement="floating"
+              [rows]="3"
+              readonly
+            ></ion-textarea>
           </ion-item>
         </ion-list>
 
-        <ion-button expand="block" color="success" (click)="decrypt()" *ngIf="encryptData.encrypted">
+        <ion-button
+          expand="block"
+          color="success"
+          (click)="decrypt()"
+          *ngIf="encryptData.encrypted"
+        >
           復号
         </ion-button>
 
         <ion-list *ngIf="encryptData.decrypted">
           <ion-item>
-            <ion-textarea [(ngModel)]="encryptData.decrypted" label="復号結果" labelPlacement="floating" [rows]="3"
-              readonly></ion-textarea>
+            <ion-textarea
+              [(ngModel)]="encryptData.decrypted"
+              label="復号結果"
+              labelPlacement="floating"
+              [rows]="3"
+              readonly
+            ></ion-textarea>
           </ion-item>
         </ion-list>
       </ion-card-content>
     </ion-card>
   </div>
-
 
   <div *ngIf="selectedTab === 'migration'">
     <ion-card>
