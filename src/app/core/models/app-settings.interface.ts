@@ -21,4 +21,5 @@ export interface AppSettings {
     showWelcomeScreen: boolean;
     defaultTab: string;
   };
+  defaultProfileId?: string;
 }

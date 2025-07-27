@@ -22,11 +22,11 @@
   - [x] `ionic start claude-pal tabs --type=angular --capacitor`
   - [x] プロジェクトディレクトリへ移動
   - [x] 初期ビルドの確認
-- [ ] 必要なパッケージのインストール
-  - [ ] SSH関連: `npm install ssh2 ssh2-promise node-forge`
-  - [ ] ターミナル: `npm install xterm xterm-addon-fit xterm-addon-web-links`
-  - [ ] セキュリティ: `npm install crypto-js`
-  - [ ] UI追加: `npm install @ionic/pwa-elements`
+- [x] 必要なパッケージのインストール
+  - [x] SSH関連: ~~`npm install ssh2 ssh2-promise`~~ (モバイルでは使用不可、ネイティブ実装予定) `node-forge`
+  - [x] ターミナル: `npm install xterm xterm-addon-fit xterm-addon-web-links`
+  - [x] セキュリティ: `npm install crypto-js`
+  - [x] UI追加: `npm install @ionic/pwa-elements`
 - [x] Capacitorプラットフォームの追加
   - [x] `ionic capacitor add ios`
   - [x] Androidプラットフォームは未対応（iOSのみ対応）
@@ -76,25 +76,25 @@
 - [x] 単体テストの作成
 
 ### SSH接続サービス
-- [ ] `ssh.service.ts`の作成
-- [ ] SSH接続の確立機能
-  - [ ] ssh2ライブラリの統合
-  - [ ] 認証処理の実装
-  - [ ] エラーハンドリング
-- [ ] シェルセッションの管理
-- [ ] コマンド実行機能
-- [ ] データストリームの処理
-- [ ] 接続状態の管理
-- [ ] 自動再接続機能
-- [ ] 単体テストの作成
+- [x] `ssh.service.ts`の作成
+- [x] SSH接続の確立機能
+  - [x] ~~ssh2ライブラリの統合~~ モック実装（後でネイティブ実装に置き換え）
+  - [x] 認証処理の実装
+  - [x] エラーハンドリング
+- [x] シェルセッションの管理
+- [x] コマンド実行機能
+- [x] データストリームの処理
+- [x] 接続状態の管理
+- [x] 自動再接続機能
+- [x] 単体テストの作成
 
 ### プロファイル管理サービス
-- [ ] `profile.service.ts`の作成
-- [ ] プロファイルのCRUD操作
-- [ ] デフォルトプロファイルの管理
-- [ ] 最近使用したプロファイルの追跡
-- [ ] プロファイルのバリデーション
-- [ ] 単体テストの作成
+- [x] `profile.service.ts`の作成
+- [x] プロファイルのCRUD操作
+- [x] デフォルトプロファイルの管理
+- [x] 最近使用したプロファイルの追跡
+- [x] プロファイルのバリデーション
+- [x] 単体テストの作成
 
 ## Phase 3: UIコンポーネント実装
 
