@@ -54,13 +54,13 @@
 - [x] 単体テストの作成
 
 ### ストレージサービス
-- [ ] `storage.service.ts`の作成
-- [ ] Capacitor Preferencesのラッパー実装
+- [x] `storage.service.ts`の作成
+- [x] Capacitor Preferencesのラッパー実装
 - [ ] 接続プロファイルの保存/読み込み
 - [ ] アプリ設定の保存/読み込み
 - [ ] データ暗号化の実装
 - [ ] マイグレーション機能の実装
-- [ ] 単体テストの作成
+- [x] 単体テストの作成
 
 ### SSH接続サービス
 - [ ] `ssh.service.ts`の作成
