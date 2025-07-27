@@ -1,15 +1,89 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title> Tab 1 </ion-title>
+    <ion-title> SSH鍵管理デモ </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Tab 1</ion-title>
+      <ion-title size="large">SSH鍵管理デモ</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <app-explore-container name="Tab 1 page"></app-explore-container>
+  <div class="ion-padding">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>新しい鍵を生成</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item>
+          <ion-label position="floating">鍵の名前</ion-label>
+          <ion-input
+            [(ngModel)]="keyName"
+            placeholder="例: my-server"
+          ></ion-input>
+        </ion-item>
+        <ion-button
+          expand="block"
+          (click)="generateKey()"
+          [disabled]="!keyName"
+        >
+          鍵を生成
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>保存された鍵</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item *ngFor="let key of keys">
+            <ion-label>
+              <h2>{{ key.name }}</h2>
+              <p>{{ key.fingerprint }}</p>
+              <p>作成日: {{ key.createdAt | date: 'short' }}</p>
+            </ion-label>
+            <ion-button slot="end" fill="clear" (click)="showKey(key)">
+              <ion-icon name="eye-outline"></ion-icon>
+            </ion-button>
+            <ion-button
+              slot="end"
+              fill="clear"
+              color="danger"
+              (click)="deleteKey(key.name)"
+            >
+              <ion-icon name="trash-outline"></ion-icon>
+            </ion-button>
+          </ion-item>
+        </ion-list>
+        <ion-text color="medium" *ngIf="keys.length === 0">
+          <p>保存された鍵はありません</p>
+        </ion-text>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="selectedKey">
+      <ion-card-header>
+        <ion-card-title>鍵の詳細: {{ selectedKey.name }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item>
+          <ion-label position="stacked">公開鍵</ion-label>
+          <ion-textarea
+            [value]="selectedKey.publicKey"
+            readonly
+            auto-grow="true"
+            class="monospace"
+          >
+          </ion-textarea>
+        </ion-item>
+        <ion-button expand="block" (click)="copyPublicKey(selectedKey)">
+          公開鍵をコピー
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  </div>
 </ion-content>
