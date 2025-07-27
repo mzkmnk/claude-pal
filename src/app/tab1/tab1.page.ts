@@ -23,6 +23,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { KeyManagerService, KeyPair } from '../core/services';
 import { Clipboard } from '@capacitor/clipboard';
+import { addIcons } from 'ionicons';
+import { eyeOutline, trashOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-tab1',
@@ -58,6 +60,10 @@ export class Tab1Page implements OnInit {
   private keyManager = inject(KeyManagerService);
   private toastController = inject(ToastController);
   private alertController = inject(AlertController);
+
+  constructor() {
+    addIcons({ eyeOutline, trashOutline });
+  }
 
   async ngOnInit() {
     await this.loadKeys();
@@ -95,8 +101,33 @@ export class Tab1Page implements OnInit {
     }
   }
 
-  showKey(key: KeyPair) {
-    this.selectedKey = key;
+  async showKey(key: KeyPair) {
+    try {
+      // Keychainから鍵を取得（ここで生体認証が発動）
+      const secureKey = await this.keyManager.getKey(key.name);
+      if (secureKey) {
+        this.selectedKey = secureKey;
+
+        const toast = await this.toastController.create({
+          message: '認証に成功しました',
+          duration: 1500,
+          position: 'bottom',
+          color: 'success',
+        });
+        await toast.present();
+      } else {
+        throw new Error('鍵の取得に失敗しました');
+      }
+    } catch (error) {
+      this.selectedKey = null;
+
+      const alert = await this.alertController.create({
+        header: '認証エラー',
+        message: error instanceof Error ? error.message : '認証に失敗しました',
+        buttons: ['OK'],
+      });
+      await alert.present();
+    }
   }
 
   async deleteKey(name: string) {
