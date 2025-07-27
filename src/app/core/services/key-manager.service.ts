@@ -1,6 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { KeyPair } from './key-pair.interface';
+import * as forge from 'node-forge';
+import { SecureStorage } from '@aparajita/capacitor-secure-storage';
+import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
 
 @Injectable({
   providedIn: 'root',
@@ -8,22 +11,60 @@ import { KeyPair } from './key-pair.interface';
 export class KeyManagerService {
   private readonly keyPrefix = 'ssh_key_';
   private readonly platform = Capacitor.getPlatform();
+  private biometricAuthAvailable = false;
 
-  constructor() {}
+  constructor() {
+    this.checkBiometricAvailability();
+  }
+
+  // 生体認証の利用可能性をチェック
+  private async checkBiometricAvailability(): Promise<void> {
+    try {
+      const result = await BiometricAuth.checkBiometry();
+      this.biometricAuthAvailable = result.isAvailable;
+    } catch (error) {
+      console.warn('生体認証の利用不可', error);
+      this.biometricAuthAvailable = false;
+    }
+  }
 
   async generateKeyPair(name: string): Promise<KeyPair> {
-    // 実際の実装では node-forge を使用しますが、
-    // まずはモックデータで実装します
-    const mockPrivateKey = this.generateMockPrivateKey();
-    const mockPublicKey = this.generateMockPublicKey();
+    return new Promise((resolve, reject) => {
+      try {
+        // RSA 4096bit 鍵ペアの生成
+        forge.pki.rsa.generateKeyPair(
+          { bits: 4096, workers: -1 },
+          (err, keypair) => {
+            if (err) {
+              reject(err);
+              return;
+            }
 
-    return {
-      name,
-      privateKey: mockPrivateKey,
-      publicKey: mockPublicKey,
-      fingerprint: this.generateFingerprint(mockPublicKey),
-      createdAt: new Date(),
-    };
+            // 秘密鍵をPEM形式に変換
+            const privateKeyPem = forge.pki.privateKeyToPem(keypair.privateKey);
+
+            // 公開鍵をOpenSSH形式に変換
+            const publicKeyOpenSSH = this.convertToOpenSSH(
+              keypair.publicKey,
+              name
+            );
+
+            // フィンガープリントの生成
+            const fingerprint = this.generateFingerprint(keypair.publicKey);
+
+            resolve({
+              name,
+              privateKey: privateKeyPem,
+              publicKey: publicKeyOpenSSH,
+              fingerprint,
+              createdAt: new Date(),
+            });
+          }
+        );
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   async saveKey(keyPair: KeyPair): Promise<boolean> {
@@ -50,6 +91,11 @@ export class KeyManagerService {
 
   async getKey(name: string): Promise<KeyPair | null> {
     try {
+      // 生体認証が利用可能な場合は認証を要求
+      if (this.biometricAuthAvailable) {
+        await this.authenticateWithBiometric();
+      }
+
       if (this.platform === 'ios') {
         return await this.getFromKeychain(name);
       } else {
@@ -89,24 +135,120 @@ export class KeyManagerService {
 
   // Private methods for iOS Keychain
   private async saveToKeychain(keyPair: KeyPair): Promise<void> {
-    // TODO: 実際のKeychainアクセスはCapacitorプラグインが必要
-    // 現在はLocalStorageで代用
-    await this.saveToLocalStorage(keyPair);
+    try {
+      // メタデータを保存（鍵名のリストを管理）
+      const keysList = await this.getKeysListFromKeychain();
+      keysList.push(keyPair.name);
+      await SecureStorage.set(
+        `${this.keyPrefix}list`,
+        JSON.stringify(keysList)
+      );
+
+      // 鍵ペアを個別に保存
+      const keyData = {
+        publicKey: keyPair.publicKey,
+        privateKey: keyPair.privateKey,
+        fingerprint: keyPair.fingerprint,
+        createdAt: keyPair.createdAt.toISOString(),
+      };
+      await SecureStorage.set(
+        `${this.keyPrefix}${keyPair.name}`,
+        JSON.stringify(keyData)
+      );
+    } catch (error) {
+      // フォールバック: LocalStorageを使用
+      console.warn(
+        'Keychain access failed, falling back to LocalStorage',
+        error
+      );
+      await this.saveToLocalStorage(keyPair);
+    }
   }
 
   private async getFromKeychain(name: string): Promise<KeyPair | null> {
-    // TODO: 実際のKeychainアクセスはCapacitorプラグインが必要
-    return await this.getFromLocalStorage(name);
+    try {
+      const result = await SecureStorage.get(`${this.keyPrefix}${name}`);
+
+      if (!result) {
+        return null;
+      }
+
+      const keyData = JSON.parse(result as string);
+      return {
+        name,
+        publicKey: keyData.publicKey,
+        privateKey: keyData.privateKey,
+        fingerprint: keyData.fingerprint,
+        createdAt: new Date(keyData.createdAt),
+      };
+    } catch (error) {
+      // フォールバック: LocalStorageを使用
+      console.warn(
+        'Keychain access failed, falling back to LocalStorage',
+        error
+      );
+      return await this.getFromLocalStorage(name);
+    }
   }
 
   private async getAllFromKeychain(): Promise<KeyPair[]> {
-    // TODO: 実際のKeychainアクセスはCapacitorプラグインが必要
-    return await this.getAllFromLocalStorage();
+    try {
+      const keysList = await this.getKeysListFromKeychain();
+      const keys: KeyPair[] = [];
+
+      for (const name of keysList) {
+        const key = await this.getFromKeychain(name);
+        if (key) {
+          keys.push(key);
+        }
+      }
+
+      return keys;
+    } catch (error) {
+      // フォールバック: LocalStorageを使用
+      console.warn(
+        'Keychain access failed, falling back to LocalStorage',
+        error
+      );
+      return await this.getAllFromLocalStorage();
+    }
   }
 
   private async deleteFromKeychain(name: string): Promise<void> {
-    // TODO: 実際のKeychainアクセスはCapacitorプラグインが必要
-    await this.deleteFromLocalStorage(name);
+    try {
+      // メタデータから削除
+      const keysList = await this.getKeysListFromKeychain();
+      const filteredList = keysList.filter(k => k !== name);
+      await SecureStorage.set(
+        `${this.keyPrefix}list`,
+        JSON.stringify(filteredList)
+      );
+
+      // 鍵データを削除
+      await SecureStorage.remove(`${this.keyPrefix}${name}`);
+    } catch (error) {
+      // フォールバック: LocalStorageを使用
+      console.warn(
+        'Keychain access failed, falling back to LocalStorage',
+        error
+      );
+      await this.deleteFromLocalStorage(name);
+    }
+  }
+
+  // Keychainから鍵名リストを取得
+  private async getKeysListFromKeychain(): Promise<string[]> {
+    try {
+      const result = await SecureStorage.get(`${this.keyPrefix}list`);
+
+      if (!result) {
+        return [];
+      }
+
+      return JSON.parse(result as string);
+    } catch (error) {
+      return [];
+    }
   }
 
   // Private methods for LocalStorage (Web fallback)
@@ -140,24 +282,83 @@ export class KeyManagerService {
     localStorage.setItem(this.keyPrefix + 'list', JSON.stringify(filteredKeys));
   }
 
-  // Mock data generators
-  private generateMockPrivateKey(): string {
-    return `-----BEGIN RSA PRIVATE KEY-----
-MIIJKQIBAAKCAgEA1234567890abcdefghijklmnopqrstuvwxyz...
-...mock private key content...
------END RSA PRIVATE KEY-----`;
+  // OpenSSH形式への変換
+  private convertToOpenSSH(
+    publicKey: forge.pki.rsa.PublicKey,
+    comment: string
+  ): string {
+    // RSA公開鍵の各コンポーネントを取得
+    const n = publicKey.n.toByteArray();
+    const e = publicKey.e.toByteArray();
+
+    // OpenSSH形式のバイト配列を構築
+    const type = 'ssh-rsa';
+    const typeBytes = this.stringToBytes(type);
+
+    // 各フィールドの長さとデータを結合
+    const data = [
+      ...this.uint32ToBytes(typeBytes.length),
+      ...typeBytes,
+      ...this.uint32ToBytes(e.length),
+      ...e,
+      ...this.uint32ToBytes(n.length),
+      ...n,
+    ];
+
+    // Base64エンコード
+    const base64 = forge.util.encode64(String.fromCharCode(...data));
+
+    return `${type} ${base64} ${comment}`;
   }
 
-  private generateMockPublicKey(): string {
-    const mockKey =
-      'AAAAB3NzaC1yc2EAAAADAQABAAACAQDV' +
-      Math.random().toString(36).substring(2, 15);
-    return `ssh-rsa ${mockKey} claude-pal@ionic`;
+  // SHA256フィンガープリントの生成
+  private generateFingerprint(publicKey: forge.pki.rsa.PublicKey): string {
+    // 公開鍵をDER形式でエンコード
+    const der = forge.asn1
+      .toDer(forge.pki.publicKeyToAsn1(publicKey))
+      .getBytes();
+
+    // SHA256ハッシュを計算
+    const md = forge.md.sha256.create();
+    md.update(der);
+    const hash = md.digest();
+
+    // Base64エンコード
+    const base64 = forge.util.encode64(hash.getBytes());
+
+    return `SHA256:${base64}`;
   }
 
-  private generateFingerprint(publicKey: string): string {
-    // 簡易的なフィンガープリント生成（実際はSHA256ハッシュを使用）
-    const hash = publicKey.split(' ')[1].substring(0, 16);
-    return `SHA256:${hash}`;
+  // ヘルパー関数：文字列をバイト配列に変換
+  private stringToBytes(str: string): number[] {
+    const bytes: number[] = [];
+    for (let i = 0; i < str.length; i++) {
+      bytes.push(str.charCodeAt(i));
+    }
+    return bytes;
+  }
+
+  // ヘルパー関数：32ビット整数をバイト配列に変換（ビッグエンディアン）
+  private uint32ToBytes(value: number): number[] {
+    return [
+      (value >> 24) & 0xff,
+      (value >> 16) & 0xff,
+      (value >> 8) & 0xff,
+      value & 0xff,
+    ];
+  }
+
+  // 生体認証を実行
+  private async authenticateWithBiometric(): Promise<void> {
+    try {
+      await BiometricAuth.authenticate({
+        reason: 'SSH鍵にアクセスするために認証が必要です',
+        cancelTitle: 'キャンセル',
+        allowDeviceCredential: true,
+        iosFallbackTitle: 'パスコードを使用',
+      });
+    } catch (error) {
+      throw new Error('生体認証に失敗しました');
+    }
   }
 }

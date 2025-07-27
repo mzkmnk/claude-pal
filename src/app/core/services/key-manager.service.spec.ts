@@ -29,6 +29,19 @@ describe('KeyManagerService', () => {
 
       expect(keyPair.publicKey).toMatch(/^ssh-rsa\s+[A-Za-z0-9+/]+=*\s+.*$/);
     });
+
+    it('秘密鍵がPEM形式であること', async () => {
+      const keyPair = await service.generateKeyPair('test-key');
+
+      expect(keyPair.privateKey).toContain('-----BEGIN RSA PRIVATE KEY-----');
+      expect(keyPair.privateKey).toContain('-----END RSA PRIVATE KEY-----');
+    });
+
+    it('フィンガープリントがSHA256形式であること', async () => {
+      const keyPair = await service.generateKeyPair('test-key');
+
+      expect(keyPair.fingerprint).toMatch(/^SHA256:[A-Za-z0-9+/]+=*$/);
+    });
   });
 
   describe('saveKey', () => {
