@@ -1,5 +1,18 @@
 # Claude PAL 実装計画書（TODO）
 
+## プラットフォーム対応状況
+
+### 現在の対応プラットフォーム
+- **iOS**: ✅ 対応（メインターゲット）
+- **Android**: ❌ 未対応（将来的な対応予定なし）
+- **Web (PWA)**: ⚠️ 部分対応（フォールバック実装のみ）
+
+### 注記
+本プロジェクトは現在**iOSのみ**を対象として開発を進めています。
+- Android関連の実装は行いません
+- Web版は開発時の動作確認用として最小限の実装のみ提供
+- iOS固有の機能（Keychain等）を積極的に活用
+
 ## Phase 1: プロジェクト初期設定
 
 ### 環境構築
@@ -16,7 +29,7 @@
   - [ ] UI追加: `npm install @ionic/pwa-elements`
 - [x] Capacitorプラットフォームの追加
   - [x] `ionic capacitor add ios`
-  - `ionic capacitor add android`(現状は未対応)
+  - [x] Androidプラットフォームは未対応（iOSのみ対応）
 - [x] ESLint/Prettier設定
   - [x] `.eslintrc.json`の作成
   - [x] `.prettierrc`の作成
@@ -44,7 +57,7 @@
   - [x] フィンガープリントの計算
 - [x] 鍵保存機能の実装
   - [x] iOS Keychain統合
-  - [ ] Android Keystore統合（対応予定なし）
+  - [x] Android Keystore統合は未対応（iOSのみ対応）
   - [x] Web版のフォールバック実装
 - [x] 鍵取得機能の実装
   - [x] 生体認証の統合
@@ -263,7 +276,7 @@
 
 ### リリース準備
 - [ ] App Store用のスクリーンショット作成
-- [ ] Google Play用のスクリーンショット作成
+- [x] Google Play用のスクリーンショット作成は不要（iOSのみ対応）
 - [ ] プライバシーポリシーの作成
 - [ ] 利用規約の作成
 - [ ] アプリ説明文の作成
@@ -272,13 +285,13 @@
 
 ### ビルドと署名
 - [ ] iOS用のProvisioning Profile設定
-- [ ] Android用の署名設定
+- [x] Android用の署名設定は不要（iOSのみ対応）
 - [ ] 本番ビルドの作成
 - [ ] ビルドの検証
 
 ### ストア申請
 - [ ] App Store Connect設定
-- [ ] Google Play Console設定
+- [x] Google Play Console設定は不要（iOSのみ対応）
 - [ ] メタデータの入力
 - [ ] 審査提出
 
