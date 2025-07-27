@@ -4,3 +4,7 @@ export { StorageService } from './storage.service';
 export { WebStorageService } from './web-storage.service';
 export { NativeStorageService } from './native-storage.service';
 export { STORAGE_PROVIDERS } from './storage.providers';
+export { ProfileStorageService } from './profile-storage.service';
+export { AppSettingsService } from './app-settings.service';
+export { EncryptionService } from './encryption.service';
+export { MigrationService } from './migration.service';
