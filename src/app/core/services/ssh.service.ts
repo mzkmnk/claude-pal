@@ -4,25 +4,73 @@ import { KeyManagerService } from './key-manager.service';
 import { ConnectionProfile } from '../models';
 import { Subject, BehaviorSubject } from 'rxjs';
 
+/**
+ * SSH接続の現在のステータスを表す
+ * @interface SSHConnectionStatus
+ */
 export interface SSHConnectionStatus {
+  /** SSH接続が確立されているかどうか */
   connected: boolean;
+  /** SSH接続が進行中かどうか */
   connecting: boolean;
+  /** 接続に失敗した場合のエラーメッセージ */
   error?: string;
+  /** 現在の接続のプロファイルID */
   profileId?: string;
 }
 
+/**
+ * SSHシェルセッションを開くためのオプション
+ * @interface SSHShellOptions
+ */
 export interface SSHShellOptions {
+  /** ターミナルの行数（デフォルト: 24） */
   rows?: number;
+  /** ターミナルの列数（デフォルト: 80） */
   cols?: number;
+  /** ターミナルタイプ（デフォルト: 'xterm-256color'） */
   term?: string;
 }
 
+/**
+ * SSH経由でコマンドを実行した結果
+ * @interface SSHCommandResult
+ */
 export interface SSHCommandResult {
+  /** コマンドの標準出力 */
   stdout: string;
+  /** コマンドの標準エラー出力 */
   stderr: string;
+  /** コマンドの終了コード */
   code: number;
 }
 
+/**
+ * SSH接続とシェルセッションを管理するサービス
+ *
+ * このサービスは以下の機能を提供します：
+ * - 鍵/パスワード認証によるSSH接続管理
+ * - シェルセッション管理
+ * - SSH経由でのコマンド実行
+ * - RxJS Observablesによるリアルタイムデータストリーミング
+ * - 自動再接続機能
+ * - Keep-alive機能
+ *
+ * @class SSHService
+ * @implements {OnDestroy}
+ * @example
+ * ```typescript
+ * // SSHサーバーに接続
+ * await sshService.connect('profile-123');
+ *
+ * // シェルを開いてデータストリームを購読
+ * sshService.dataStream$.subscribe(data => console.log(data));
+ * await sshService.openShell();
+ *
+ * // コマンドを送信
+ * sshService.sendData('ls -la\r');
+ * ```
+ */
 @Injectable({
   providedIn: 'root',
 })
@@ -38,14 +86,23 @@ export class SSHService implements OnDestroy {
   private dataStreamSubject = new Subject<string>();
   private connectionSubject = new BehaviorSubject<boolean>(false);
 
+  /** 接続ステータスの監視可能なオブジェクト */
   readonly connectionStatus = computed(() => this.connectionStatusSignal());
+
+  /** 接続されているかどうかを示す監視可能なブール値 */
   readonly isConnected = computed(
     () => this.connectionStatusSignal().connected
   );
+
+  /** 接続中かどうかを示す監視可能なブール値 */
   readonly isConnecting = computed(
     () => this.connectionStatusSignal().connecting
   );
+
+  /** ターミナルデータの監視可能なストリーム */
   readonly dataStream$ = this.dataStreamSubject.asObservable();
+
+  /** 接続状態の変更の監視可能なストリーム */
   readonly connection$ = this.connectionSubject.asObservable();
 
   private activeConnection: unknown | null = null;
@@ -53,6 +110,14 @@ export class SSHService implements OnDestroy {
   private reconnectTimeout: number | undefined;
   private keepAliveInterval: number | undefined;
 
+  /**
+   * 指定されたプロファイルを使用してSSH接続を確立する
+   *
+   * @param {string} profileId - 使用する接続プロファイルのID
+   * @returns {Promise<void>}
+   * @throws {Error} プロファイルが見つからない、鍵が見つからない、または認証に失敗した場合
+   * @public
+   */
   async connect(profileId: string): Promise<void> {
     try {
       this.connectionStatusSignal.set({
@@ -107,6 +172,12 @@ export class SSHService implements OnDestroy {
     }
   }
 
+  /**
+   * 現在のSSH接続を切断する
+   *
+   * @returns {Promise<void>}
+   * @public
+   */
   async disconnect(): Promise<void> {
     this.stopKeepAlive();
     this.clearReconnectTimeout();
@@ -128,6 +199,14 @@ export class SSHService implements OnDestroy {
     this.connectionSubject.next(false);
   }
 
+  /**
+   * 接続されたSSHサーバーでシェルセッションを開く
+   *
+   * @param {SSHShellOptions} [options] - シェル設定オプション
+   * @returns {Promise<void>}
+   * @throws {Error} 接続されていない場合
+   * @public
+   */
   async openShell(options?: SSHShellOptions): Promise<void> {
     if (!this.isConnected()) {
       throw new Error('SSH接続が確立されていません');
@@ -143,6 +222,13 @@ export class SSHService implements OnDestroy {
     await this.mockOpenShell(shellOptions);
   }
 
+  /**
+   * アクティブなシェルセッションにデータを送信する
+   *
+   * @param {string} data - 送信するデータ
+   * @throws {Error} アクティブなシェルセッションがない場合
+   * @public
+   */
   sendData(data: string): void {
     if (!this.activeShell) {
       throw new Error('シェルセッションがアクティブではありません');
@@ -152,6 +238,14 @@ export class SSHService implements OnDestroy {
     this.mockSendData(data);
   }
 
+  /**
+   * SSHサーバーで単一のコマンドを実行する
+   *
+   * @param {string} command - 実行するコマンド
+   * @returns {Promise<SSHCommandResult>} コマンド実行結果
+   * @throws {Error} 接続されていない場合
+   * @public
+   */
   async executeCommand(command: string): Promise<SSHCommandResult> {
     if (!this.isConnected()) {
       throw new Error('SSH接続が確立されていません');
@@ -161,6 +255,13 @@ export class SSHService implements OnDestroy {
     return this.mockExecuteCommand(command);
   }
 
+  /**
+   * ターミナルの寸法を変更する
+   *
+   * @param {number} rows - 行数
+   * @param {number} cols - 列数
+   * @public
+   */
   resize(rows: number, cols: number): void {
     if (!this.activeShell) {
       return;
@@ -170,6 +271,13 @@ export class SSHService implements OnDestroy {
     this.mockResize(rows, cols);
   }
 
+  /**
+   * 現在の接続プロファイルを使用して再接続する
+   *
+   * @returns {Promise<void>}
+   * @throws {Error} 以前の接続プロファイルがない場合
+   * @public
+   */
   async reconnect(): Promise<void> {
     const currentProfileId = this.connectionStatusSignal().profileId;
     if (!currentProfileId) {
@@ -315,6 +423,11 @@ export class SSHService implements OnDestroy {
     }
   }
 
+  /**
+   * サービスが破棄されるときに呼び出されるクリーンアップメソッド
+   *
+   * @returns {void}
+   */
   ngOnDestroy(): void {
     this.disconnect();
   }

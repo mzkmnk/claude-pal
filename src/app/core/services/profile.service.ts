@@ -3,11 +3,39 @@ import { ProfileStorageService } from './profile-storage.service';
 import { AppSettingsService } from './app-settings.service';
 import { ConnectionProfile } from '../models';
 
+/**
+ * 接続プロファイルのフィールドに対するバリデーションエラーを表す
+ * @interface ProfileValidationError
+ */
 export interface ProfileValidationError {
+  /** バリデーションに失敗したフィールド名 */
   field: string;
+  /** バリデーション失敗の詳細メッセージ */
   message: string;
 }
 
+/**
+ * SSH接続プロファイルを管理するサービス
+ *
+ * このサービスは接続プロファイルに対する高レベルな操作を提供します：
+ * - プロファイルのCRUD操作
+ * - デフォルトプロファイルの管理
+ * - 最近使用したプロファイルの追跡
+ * - プロファイルのバリデーションとインポート/エクスポート
+ *
+ * @class ProfileService
+ * @example
+ * ```typescript
+ * const profile = await profileService.createProfile({
+ *   name: 'My Server',
+ *   host: '192.168.1.100',
+ *   port: 22,
+ *   username: 'user',
+ *   authType: 'key',
+ *   keyId: 'key-123'
+ * });
+ * ```
+ */
 @Injectable({
   providedIn: 'root',
 })
@@ -19,12 +47,17 @@ export class ProfileService {
   private defaultProfileIdSignal = signal<string | null>(null);
   private recentProfilesSignal = signal<ConnectionProfile[]>([]);
 
+  /** すべての接続プロファイルのリスト（Observable） */
   readonly profiles = computed(() => this.profilesSignal());
+
+  /** デフォルト接続プロファイルへの参照（Observable） */
   readonly defaultProfile = computed(() => {
     const defaultId = this.defaultProfileIdSignal();
     if (!defaultId) return null;
     return this.profilesSignal().find(p => p.id === defaultId) || null;
   });
+
+  /** 最近使用したプロファイルのリスト（最大5件、Observable） */
   readonly recentProfiles = computed(() => this.recentProfilesSignal());
 
   constructor() {
@@ -52,6 +85,14 @@ export class ProfileService {
     this.recentProfilesSignal.set(recent);
   }
 
+  /**
+   * 新しい接続プロファイルを作成する
+   *
+   * @param {Omit<ConnectionProfile, 'id' | 'createdAt' | 'updatedAt'>} profile - 作成するプロファイルのデータ
+   * @returns {Promise<ConnectionProfile>} 生成されたIDとタイムスタンプを含む作成済みプロファイル
+   * @throws {Error} バリデーションに失敗した場合
+   * @public
+   */
   async createProfile(
     profile: Omit<ConnectionProfile, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<ConnectionProfile> {
@@ -81,6 +122,15 @@ export class ProfileService {
     return savedProfile;
   }
 
+  /**
+   * 既存の接続プロファイルを更新する
+   *
+   * @param {string} id - 更新するプロファイルのID
+   * @param {Partial<Omit<ConnectionProfile, 'id' | 'createdAt' | 'updatedAt'>>} updates - 更新するフィールド
+   * @returns {Promise<ConnectionProfile>} 更新されたプロファイル
+   * @throws {Error} プロファイルが見つからない、またはバリデーションに失敗した場合
+   * @public
+   */
   async updateProfile(
     id: string,
     updates: Partial<Omit<ConnectionProfile, 'id' | 'createdAt' | 'updatedAt'>>
@@ -111,6 +161,13 @@ export class ProfileService {
     return saved;
   }
 
+  /**
+   * 接続プロファイルを削除する
+   *
+   * @param {string} id - 削除するプロファイルのID
+   * @returns {Promise<void>}
+   * @public
+   */
   async deleteProfile(id: string): Promise<void> {
     // デフォルトプロファイルの場合はクリア
     if (this.defaultProfileIdSignal() === id) {
@@ -124,14 +181,35 @@ export class ProfileService {
     await this.loadProfiles();
   }
 
+  /**
+   * IDで特定の接続プロファイルを取得する
+   *
+   * @param {string} id - プロファイルのID
+   * @returns {Promise<ConnectionProfile | null>} プロファイル、見つからない場合はnull
+   * @public
+   */
   async getProfile(id: string): Promise<ConnectionProfile | null> {
     return this.profileStorage.getProfile(id);
   }
 
+  /**
+   * すべての接続プロファイルを取得する
+   *
+   * @returns {Promise<ConnectionProfile[]>} すべてのプロファイルの配列
+   * @public
+   */
   async getAllProfiles(): Promise<ConnectionProfile[]> {
     return this.profileStorage.getAllProfiles();
   }
 
+  /**
+   * プロファイルをデフォルト接続プロファイルとして設定する
+   *
+   * @param {string} id - デフォルトに設定するプロファイルのID
+   * @returns {Promise<void>}
+   * @throws {Error} プロファイルが見つからない場合
+   * @public
+   */
   async setDefaultProfile(id: string): Promise<void> {
     const profile = await this.profileStorage.getProfile(id);
     if (!profile) {
@@ -147,6 +225,12 @@ export class ProfileService {
     this.defaultProfileIdSignal.set(id);
   }
 
+  /**
+   * デフォルトプロファイルの設定をクリアする
+   *
+   * @returns {Promise<void>}
+   * @public
+   */
   async clearDefaultProfile(): Promise<void> {
     const settings = await this.appSettings.getSettings();
     const { defaultProfileId, ...settingsWithoutDefault } = settings;
@@ -155,11 +239,25 @@ export class ProfileService {
     this.defaultProfileIdSignal.set(null);
   }
 
+  /**
+   * プロファイルを最近使用したものとしてマークする
+   *
+   * @param {string} id - プロファイルのID
+   * @returns {Promise<void>}
+   * @public
+   */
   async markAsUsed(id: string): Promise<void> {
     await this.profileStorage.markAsUsed(id);
     await this.loadRecentProfiles();
   }
 
+  /**
+   * 接続プロファイルをバリデートする
+   *
+   * @param {Partial<ConnectionProfile>} profile - バリデートするプロファイル
+   * @returns {ProfileValidationError[]} バリデーションエラーの配列（有効な場合は空）
+   * @public
+   */
   validateProfile(
     profile: Partial<ConnectionProfile>
   ): ProfileValidationError[] {
@@ -247,6 +345,15 @@ export class ProfileService {
     return hostnameRegex.test(host);
   }
 
+  /**
+   * 既存のプロファイルを新しい名前で複製する
+   *
+   * @param {string} id - 複製元のプロファイルのID
+   * @param {string} newName - 複製されたプロファイルの名前
+   * @returns {Promise<ConnectionProfile>} 新しく複製されたプロファイル
+   * @throws {Error} プロファイルが見つからない場合
+   * @public
+   */
   async duplicateProfile(
     id: string,
     newName: string
@@ -269,6 +376,14 @@ export class ProfileService {
     return this.createProfile(profileData);
   }
 
+  /**
+   * プロファイルをJSON形式でエクスポートする（機密データを除く）
+   *
+   * @param {string} id - エクスポートするプロファイルのID
+   * @returns {Promise<string>} プロファイルのJSON文字列表現
+   * @throws {Error} プロファイルが見つからない場合
+   * @public
+   */
   async exportProfile(id: string): Promise<string> {
     const profile = await this.profileStorage.getProfile(id);
     if (!profile) {
@@ -287,6 +402,14 @@ export class ProfileService {
     return JSON.stringify(exportData, null, 2);
   }
 
+  /**
+   * JSONデータからプロファイルをインポートする
+   *
+   * @param {string} jsonData - プロファイルデータを含むJSON文字列
+   * @returns {Promise<ConnectionProfile>} インポートされたプロファイル
+   * @throws {Error} JSONが無効、または必須フィールドが不足している場合
+   * @public
+   */
   async importProfile(jsonData: string): Promise<ConnectionProfile> {
     try {
       const data = JSON.parse(jsonData);
