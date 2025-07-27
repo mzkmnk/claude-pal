@@ -89,7 +89,8 @@ export class AppSettingsService {
     const result = { ...target };
 
     for (const key in source) {
-      if (source.hasOwnProperty(key)) {
+      // プロトタイプ汚染を防ぐため、Object.prototype.hasOwnProperty.callを使用
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
         const sourceValue = source[key];
         const targetValue = target[key];
 

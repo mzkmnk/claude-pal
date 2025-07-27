@@ -28,7 +28,8 @@ export class EncryptionService {
     combined.set(iv, salt.length);
     combined.set(new Uint8Array(encrypted), salt.length + iv.length);
 
-    return btoa(String.fromCharCode.apply(null, Array.from(combined)));
+    // スプレッド演算子を使用してスタックオーバーフローを回避
+    return btoa(String.fromCharCode(...combined));
   }
 
   async decrypt(encryptedData: string, password: string): Promise<string> {
