@@ -1,3 +1,6 @@
 build
 coverage
 node_modules
+
+# Temporary ignore for problematic file
+src/app/tab3/tab3.page.html
