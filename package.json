@@ -1,8 +1,7 @@
 {
-  "name": "ionic-app-base",
+  "name": "claude-pal",
   "version": "0.0.0",
-  "author": "Ionic Framework",
-  "homepage": "https://ionicframework.com/",
+  "author": "mzkmnk",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
