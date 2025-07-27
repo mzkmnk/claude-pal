@@ -18,6 +18,7 @@ module.exports = [
       '.angular/**/*',
       '*.min.js',
       '*.config.js',
+      'src/app/tab3/tab3.page.html',
     ]
   },
 

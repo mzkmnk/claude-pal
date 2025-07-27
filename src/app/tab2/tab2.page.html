@@ -1,15 +1,127 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title> Tab 2 </ion-title>
+    <ion-title>ストレージサービス デモ</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Tab 2</ion-title>
+      <ion-title size="large">ストレージサービス デモ</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <app-explore-container name="Tab 2 page"></app-explore-container>
+  <div class="ion-padding">
+    <!-- ストレージタイプ表示 -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>現在のストレージタイプ</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-chip color="primary">
+          <ion-icon name="save"></ion-icon>
+          <ion-label>{{ storageType }}</ion-label>
+        </ion-chip>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 基本的なCRUD操作 -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>基本的なストレージ操作</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item>
+            <ion-label position="stacked">キー</ion-label>
+            <ion-input
+              [(ngModel)]="testKey"
+              placeholder="storage_key"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-label position="stacked">値 (JSON形式)</ion-label>
+            <ion-textarea
+              [(ngModel)]="testValue"
+              rows="3"
+              placeholder='{ "key": "value" }'
+            ></ion-textarea>
+          </ion-item>
+        </ion-list>
+
+        <div class="ion-padding-top">
+          <ion-button (click)="saveData()" expand="block" color="primary">
+            <ion-icon name="save" slot="start"></ion-icon>
+            データを保存
+          </ion-button>
+          <ion-button (click)="loadData()" expand="block" color="secondary">
+            <ion-icon name="download" slot="start"></ion-icon>
+            データを取得
+          </ion-button>
+          <ion-button (click)="removeData()" expand="block" color="warning">
+            <ion-icon name="trash" slot="start"></ion-icon>
+            データを削除
+          </ion-button>
+        </div>
+
+        <!-- 取得したデータの表示 -->
+        <div class="ion-padding-top" *ngIf="retrievedValue !== null">
+          <ion-item>
+            <ion-label position="stacked">取得したデータ</ion-label>
+            <ion-text>
+              <pre>{{ retrievedValue }}</pre>
+            </ion-text>
+          </ion-item>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 複数データの操作 -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>複数データの操作</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-button
+          (click)="saveMultipleItems()"
+          expand="block"
+          color="tertiary"
+        >
+          <ion-icon name="save" slot="start"></ion-icon>
+          テストデータを3つ保存
+        </ion-button>
+        <ion-button (click)="clearAllData()" expand="block" color="danger">
+          <ion-icon name="trash" slot="start"></ion-icon>
+          すべてのデータを削除
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 保存されているキー一覧 -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          保存されているキー一覧
+          <ion-badge color="primary">{{ allKeys.length }}</ion-badge>
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-button (click)="loadAllKeys()" fill="outline" size="small">
+          <ion-icon name="refresh" slot="start"></ion-icon>
+          更新
+        </ion-button>
+
+        <ion-list class="ion-padding-top" *ngIf="allKeys.length > 0">
+          <ion-item *ngFor="let key of allKeys">
+            <ion-label>{{ key }}</ion-label>
+            <ion-icon name="checkmark" color="success" slot="end"></ion-icon>
+          </ion-item>
+        </ion-list>
+
+        <ion-text color="medium" *ngIf="allKeys.length === 0">
+          <p>保存されているデータはありません</p>
+        </ion-text>
+      </ion-card-content>
+    </ion-card>
+  </div>
 </ion-content>

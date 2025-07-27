@@ -1,15 +1,276 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title> Tab 3 </ion-title>
+    <ion-title>ストレージサービス動作確認</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Tab 3</ion-title>
+      <ion-title size="large">ストレージサービス</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <app-explore-container name="Tab 3 page"></app-explore-container>
+  <ion-segment [(ngModel)]="selectedTab" mode="md">
+    <ion-segment-button value="profile">
+      <ion-label>プロファイル</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="settings">
+      <ion-label>設定</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="encryption">
+      <ion-label>暗号化</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="migration">
+      <ion-label>マイグレーション</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <div *ngIf="selectedTab === 'profile'">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>接続プロファイル管理</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item>
+            <ion-input
+              [(ngModel)]="newProfile.name"
+              label="プロファイル名"
+              labelPlacement="floating"
+              placeholder="My Server"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              [(ngModel)]="newProfile.host"
+              label="ホスト"
+              labelPlacement="floating"
+              placeholder="example.com"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              [(ngModel)]="newProfile.port"
+              label="ポート"
+              labelPlacement="floating"
+              type="number"
+              placeholder="22"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              [(ngModel)]="newProfile.username"
+              label="ユーザー名"
+              labelPlacement="floating"
+              placeholder="user"
+            ></ion-input>
+          </ion-item>
+        </ion-list>
+        <ion-button expand="block" (click)="saveProfile()">
+          <ion-icon slot="start" name="save-outline"></ion-icon>
+          プロファイル保存
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="profiles.length > 0">
+      <ion-card-header>
+        <ion-card-title>保存済みプロファイル</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item *ngFor="let profile of profiles">
+            <ion-label>
+              <h2>{{ profile.name }}</h2>
+              <p>
+                {{ profile.username }}@{{ profile.host }}:{{ profile.port }}
+              </p>
+              <p *ngIf="profile.lastUsed">
+                最終使用: {{ profile.lastUsed | date:'short' }}
+              </p>
+            </ion-label>
+            <ion-button
+              slot="end"
+              fill="clear"
+              (click)="markProfileAsUsed(profile)"
+            >
+              <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+            </ion-button>
+            <ion-button
+              slot="end"
+              fill="clear"
+              color="danger"
+              (click)="deleteProfile(profile)"
+            >
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-button>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <div *ngIf="selectedTab === 'settings' && settings">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>アプリ設定</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item>
+            <ion-label>テーマ</ion-label>
+            <ion-segment
+              [value]="settings.theme"
+              (ionChange)="updateTheme($event)"
+            >
+              <ion-segment-button value="light">
+                <ion-label>ライト</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="dark">
+                <ion-label>ダーク</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="system">
+                <ion-label>システム</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+          </ion-item>
+          <ion-item>
+            <ion-label>生体認証</ion-label>
+            <ion-toggle
+              [checked]="settings.security.biometricAuthEnabled"
+              (ionChange)="toggleBiometric()"
+            ></ion-toggle>
+          </ion-item>
+          <ion-item>
+            <ion-label>
+              <h2>ターミナル設定</h2>
+              <p>フォントサイズ: {{ settings.terminalSettings.fontSize }}px</p>
+              <p>フォント: {{ settings.terminalSettings.fontFamily }}</p>
+              <p>カーソル: {{ settings.terminalSettings.cursorStyle }}</p>
+            </ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-label>
+              <h2>接続設定</h2>
+              <p>タイムアウト: {{ settings.connectionSettings.timeout }}秒</p>
+              <p>
+                デフォルトポート: {{ settings.connectionSettings.defaultPort }}
+              </p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <ion-button expand="block" color="warning" (click)="resetSettings()">
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>
+          設定をリセット
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <div *ngIf="selectedTab === 'encryption'">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>暗号化/復号テスト</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item>
+            <ion-textarea
+              [(ngModel)]="encryptData.plainText"
+              label="平文"
+              labelPlacement="floating"
+              placeholder="暗号化するテキスト"
+              [rows]="3"
+            ></ion-textarea>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              [(ngModel)]="encryptData.password"
+              label="パスワード"
+              labelPlacement="floating"
+              type="password"
+              placeholder="暗号化パスワード"
+            ></ion-input>
+          </ion-item>
+        </ion-list>
+
+        <ion-button expand="block" (click)="encrypt()">
+          <ion-icon slot="start" name="lock-closed-outline"></ion-icon>
+          暗号化
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          color="secondary"
+          (click)="generatePassword()"
+        >
+          <ion-icon slot="start" name="key-outline"></ion-icon>
+          パスワード生成
+        </ion-button>
+
+        <ion-button expand="block" color="tertiary" (click)="hashText()">
+          ハッシュ生成
+        </ion-button>
+
+        <ion-list *ngIf="encryptData.encrypted">
+          <ion-item>
+            <ion-textarea
+              [(ngModel)]="encryptData.encrypted"
+              label="暗号化結果"
+              labelPlacement="floating"
+              [rows]="3"
+              readonly
+            ></ion-textarea>
+          </ion-item>
+        </ion-list>
+
+        <ion-button
+          expand="block"
+          color="success"
+          (click)="decrypt()"
+          *ngIf="encryptData.encrypted"
+        >
+          復号
+        </ion-button>
+
+        <ion-list *ngIf="encryptData.decrypted">
+          <ion-item>
+            <ion-textarea
+              [(ngModel)]="encryptData.decrypted"
+              label="復号結果"
+              labelPlacement="floating"
+              [rows]="3"
+              readonly
+            ></ion-textarea>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <div *ngIf="selectedTab === 'migration'">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>マイグレーション管理</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item>
+            <ion-label>
+              <h2>現在のバージョン</h2>
+              <p>{{ currentVersion }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <ion-button expand="block" (click)="runMigration()">
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>
+          マイグレーション実行
+        </ion-button>
+        <p class="ion-text-center ion-padding">
+          <small>デモ用：1.1.0へのマイグレーションを実行します</small>
+        </p>
+      </ion-card-content>
+    </ion-card>
+  </div>
 </ion-content>
