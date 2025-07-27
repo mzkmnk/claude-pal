@@ -124,6 +124,64 @@ export function validateEmail(email: string): boolean {
 - テストの説明: 日本語で期待される振る舞いを記述
 - `it('〜すること')` の形式で記述
 
+### JSDocコメント規約
+**重要**: すべてのクラス、関数、インターフェース、型定義にはJSDoc形式のコメントを**必ず日本語**で記載してください。
+
+#### JSDocコメントの記載ルール
+1. **言語**: すべてのJSDocコメントは日本語で記述（技術用語は英語OK）
+2. **対象**: 以下の要素には必ずJSDocコメントを付ける
+   - クラス
+   - インターフェース
+   - 型定義（type）
+   - パブリックメソッド
+   - パブリックプロパティ
+   - 関数
+3. **形式**: OSS準拠のJSDoc形式を使用
+
+#### JSDocコメント例
+```typescript
+/**
+ * ユーザー認証を管理するサービス
+ * 
+ * このサービスは以下の機能を提供します：
+ * - ログイン/ログアウト処理
+ * - トークン管理
+ * - ユーザー情報の取得
+ * 
+ * @class AuthService
+ * @example
+ * ```typescript
+ * const isLoggedIn = await authService.login(credentials);
+ * ```
+ */
+export class AuthService {
+  /**
+   * ユーザーをログインさせる
+   * 
+   * @param {LoginCredentials} credentials - ログイン認証情報
+   * @returns {Promise<boolean>} ログイン成功時はtrue、失敗時はfalse
+   * @throws {Error} ネットワークエラーが発生した場合
+   * @public
+   */
+  async login(credentials: LoginCredentials): Promise<boolean> {
+    // 実装
+  }
+}
+
+/**
+ * ログイン認証情報を表すインターフェース
+ * @interface LoginCredentials
+ */
+export interface LoginCredentials {
+  /** ユーザー名またはメールアドレス */
+  username: string;
+  /** パスワード */
+  password: string;
+  /** ログイン状態を保持するかどうか */
+  rememberMe?: boolean;
+}
+```
+
 ## Language Settings / 言語設定
 
 **IMPORTANT / 重要**: In this project, Claude Code must ALWAYS respond in Japanese. Technical terms can remain in English.
