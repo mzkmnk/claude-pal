@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, OnDestroy } from '@angular/core';
 import { ProfileService } from './profile.service';
 import { KeyManagerService } from './key-manager.service';
 import { ConnectionProfile } from '../models';
@@ -26,7 +26,7 @@ export interface SSHCommandResult {
 @Injectable({
   providedIn: 'root',
 })
-export class SSHService {
+export class SSHService implements OnDestroy {
   private profileService = inject(ProfileService);
   private keyManager = inject(KeyManagerService);
 
