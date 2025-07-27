@@ -21,6 +21,11 @@
         <string>$(CURRENT_PROJECT_VERSION)</string>
         <key>LSRequiresIPhoneOS</key>
         <true />
+        <key>NSAppTransportSecurity</key>
+        <dict>
+            <key>NSAllowsArbitraryLoads</key>
+            <true />
+        </dict>
         <key>UILaunchStoryboardName</key>
         <string>LaunchScreen</string>
         <key>UIMainStoryboardFile</key>
@@ -44,10 +49,7 @@
         </array>
         <key>UIViewControllerBasedStatusBarAppearance</key>
         <true />
-        <key>NSAppTransportSecurity</key>
-        <dict>
-            <key>NSAllowsArbitraryLoads</key>
-            <true />
-        </dict>
+        <key>NSFaceIDUsageDescription</key>
+        <string>SSH鍵へのアクセスを保護するためFace IDを使用します</string>
     </dict>
 </plist>

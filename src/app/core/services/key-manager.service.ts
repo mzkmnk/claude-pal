@@ -12,9 +12,15 @@ export class KeyManagerService {
   private readonly keyPrefix = 'ssh_key_';
   private readonly platform = Capacitor.getPlatform();
   private biometricAuthAvailable = false;
+  private biometricInitialized = false;
 
   constructor() {
-    this.checkBiometricAvailability();
+    this.initializeBiometricAuth();
+  }
+
+  private async initializeBiometricAuth(): Promise<void> {
+    await this.checkBiometricAvailability();
+    this.biometricInitialized = true;
   }
 
   // 生体認証の利用可能性をチェック
@@ -23,7 +29,6 @@ export class KeyManagerService {
       const result = await BiometricAuth.checkBiometry();
       this.biometricAuthAvailable = result.isAvailable;
     } catch (error) {
-      console.warn('生体認証の利用不可', error);
       this.biometricAuthAvailable = false;
     }
   }
@@ -91,8 +96,13 @@ export class KeyManagerService {
 
   async getKey(name: string): Promise<KeyPair | null> {
     try {
+      // 生体認証の初期化を待つ
+      if (!this.biometricInitialized) {
+        await this.initializeBiometricAuth();
+      }
+
       // 生体認証が利用可能な場合は認証を要求
-      if (this.biometricAuthAvailable) {
+      if (this.biometricAuthAvailable && this.platform === 'ios') {
         await this.authenticateWithBiometric();
       }
 
@@ -102,7 +112,7 @@ export class KeyManagerService {
         return await this.getFromLocalStorage(name);
       }
     } catch (error) {
-      return null;
+      throw error;
     }
   }
 
@@ -157,10 +167,6 @@ export class KeyManagerService {
       );
     } catch (error) {
       // フォールバック: LocalStorageを使用
-      console.warn(
-        'Keychain access failed, falling back to LocalStorage',
-        error
-      );
       await this.saveToLocalStorage(keyPair);
     }
   }
@@ -183,10 +189,6 @@ export class KeyManagerService {
       };
     } catch (error) {
       // フォールバック: LocalStorageを使用
-      console.warn(
-        'Keychain access failed, falling back to LocalStorage',
-        error
-      );
       return await this.getFromLocalStorage(name);
     }
   }
@@ -206,10 +208,6 @@ export class KeyManagerService {
       return keys;
     } catch (error) {
       // フォールバック: LocalStorageを使用
-      console.warn(
-        'Keychain access failed, falling back to LocalStorage',
-        error
-      );
       return await this.getAllFromLocalStorage();
     }
   }
@@ -228,10 +226,6 @@ export class KeyManagerService {
       await SecureStorage.remove(`${this.keyPrefix}${name}`);
     } catch (error) {
       // フォールバック: LocalStorageを使用
-      console.warn(
-        'Keychain access failed, falling back to LocalStorage',
-        error
-      );
       await this.deleteFromLocalStorage(name);
     }
   }
