@@ -5,27 +5,27 @@ import { TerminalGestureService } from './terminal-gesture.service';
 
 describe('TerminalGestureService', () => {
   let service: TerminalGestureService;
-  let gestureController: GestureController;
-  let platform: Platform;
+  let gestureController: jasmine.SpyObj<GestureController>;
+  let platform: jasmine.SpyObj<Platform>;
   let mockElement: ElementRef<HTMLElement>;
   let mockGesture: any;
 
   beforeEach(() => {
     // モックジェスチャーオブジェクト
     mockGesture = {
-      enable: jest.fn(),
-      destroy: jest.fn(),
+      enable: jasmine.createSpy('enable'),
+      destroy: jasmine.createSpy('destroy'),
     };
 
     // GestureControllerのモック
-    const gestureControllerMock = {
-      create: jest.fn().mockReturnValue(mockGesture),
-    };
+    const gestureControllerSpy = jasmine.createSpyObj('GestureController', [
+      'create',
+    ]);
+    gestureControllerSpy.create.and.returnValue(mockGesture);
 
     // Platformのモック
-    const platformMock = {
-      is: jest.fn().mockReturnValue(false),
-    };
+    const platformSpy = jasmine.createSpyObj('Platform', ['is']);
+    platformSpy.is.and.returnValue(false);
 
     // ElementRefのモック
     mockElement = {
@@ -35,18 +35,16 @@ describe('TerminalGestureService', () => {
     TestBed.configureTestingModule({
       providers: [
         TerminalGestureService,
-        { provide: GestureController, useValue: gestureControllerMock },
-        { provide: Platform, useValue: platformMock },
+        { provide: GestureController, useValue: gestureControllerSpy },
+        { provide: Platform, useValue: platformSpy },
       ],
     });
 
     service = TestBed.inject(TerminalGestureService);
-    gestureController = TestBed.inject(GestureController);
-    platform = TestBed.inject(Platform);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    gestureController = TestBed.inject(
+      GestureController
+    ) as jasmine.SpyObj<GestureController>;
+    platform = TestBed.inject(Platform) as jasmine.SpyObj<Platform>;
   });
 
   it('サービスが作成できること', () => {
@@ -55,7 +53,7 @@ describe('TerminalGestureService', () => {
 
   describe('createGestures', () => {
     it('iOS以外のプラットフォームではジェスチャーが作成されないこと', () => {
-      const onGesture = jest.fn();
+      const onGesture = jasmine.createSpy('onGesture');
       const result = service.createGestures(mockElement, onGesture);
 
       expect(gestureController.create).not.toHaveBeenCalled();
@@ -63,8 +61,8 @@ describe('TerminalGestureService', () => {
     });
 
     it('iOSプラットフォームでジェスチャーが作成されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       const result = service.createGestures(mockElement, onGesture);
 
@@ -75,8 +73,8 @@ describe('TerminalGestureService', () => {
     });
 
     it('destroyメソッドがすべてのジェスチャーを破棄すること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       const result = service.createGestures(mockElement, onGesture);
       result.destroy();
@@ -87,13 +85,12 @@ describe('TerminalGestureService', () => {
 
   describe('ピンチジェスチャー', () => {
     it('ピンチジェスチャーが正しく設定されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       service.createGestures(mockElement, onGesture);
 
-      const createCall = (gestureController.create as jest.Mock).mock
-        .calls[0][0];
+      const createCall = gestureController.create.calls.argsFor(0)[0];
       expect(createCall.gestureName).toBe('pinch');
       expect(createCall.threshold).toBe(0);
       expect(createCall.onStart).toBeDefined();
@@ -101,17 +98,20 @@ describe('TerminalGestureService', () => {
     });
 
     it('ピンチのonMoveイベントが正しく処理されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       service.createGestures(mockElement, onGesture);
 
-      const createCall = (gestureController.create as jest.Mock).mock
-        .calls[0][0];
-      createCall.onStart();
+      const createCall = gestureController.create.calls.argsFor(0)[0];
+      if (createCall.onStart) {
+        createCall.onStart({} as any);
+      }
 
       // スケール変更をシミュレート
-      createCall.onMove({ currentX: 200, startX: 100 });
+      if (createCall.onMove) {
+        createCall.onMove({ currentX: 200, startX: 100 } as any);
+      }
 
       expect(onGesture).toHaveBeenCalledWith({
         type: 'pinch',
@@ -120,17 +120,20 @@ describe('TerminalGestureService', () => {
     });
 
     it('小さなスケール変更は無視されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       service.createGestures(mockElement, onGesture);
 
-      const createCall = (gestureController.create as jest.Mock).mock
-        .calls[0][0];
-      createCall.onStart();
+      const createCall = gestureController.create.calls.argsFor(0)[0];
+      if (createCall.onStart) {
+        createCall.onStart({} as any);
+      }
 
       // 小さなスケール変更
-      createCall.onMove({ currentX: 105, startX: 100 });
+      if (createCall.onMove) {
+        createCall.onMove({ currentX: 105, startX: 100 } as any);
+      }
 
       expect(onGesture).not.toHaveBeenCalled();
     });
@@ -138,27 +141,27 @@ describe('TerminalGestureService', () => {
 
   describe('スワイプジェスチャー', () => {
     it('スワイプジェスチャーが正しく設定されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       service.createGestures(mockElement, onGesture);
 
-      const createCall = (gestureController.create as jest.Mock).mock
-        .calls[1][0];
+      const createCall = gestureController.create.calls.argsFor(1)[0];
       expect(createCall.gestureName).toBe('swipe');
       expect(createCall.threshold).toBe(15);
       expect(createCall.onEnd).toBeDefined();
     });
 
     it('右スワイプが検出されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       service.createGestures(mockElement, onGesture);
 
-      const createCall = (gestureController.create as jest.Mock).mock
-        .calls[1][0];
-      createCall.onEnd({ deltaX: 100, deltaY: 10 });
+      const createCall = gestureController.create.calls.argsFor(1)[0];
+      if (createCall.onEnd) {
+        createCall.onEnd({ deltaX: 100, deltaY: 10 } as any);
+      }
 
       expect(onGesture).toHaveBeenCalledWith({
         type: 'swipe',
@@ -167,14 +170,15 @@ describe('TerminalGestureService', () => {
     });
 
     it('左スワイプが検出されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       service.createGestures(mockElement, onGesture);
 
-      const createCall = (gestureController.create as jest.Mock).mock
-        .calls[1][0];
-      createCall.onEnd({ deltaX: -100, deltaY: 10 });
+      const createCall = gestureController.create.calls.argsFor(1)[0];
+      if (createCall.onEnd) {
+        createCall.onEnd({ deltaX: -100, deltaY: 10 } as any);
+      }
 
       expect(onGesture).toHaveBeenCalledWith({
         type: 'swipe',
@@ -183,14 +187,15 @@ describe('TerminalGestureService', () => {
     });
 
     it('上スワイプが検出されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       service.createGestures(mockElement, onGesture);
 
-      const createCall = (gestureController.create as jest.Mock).mock
-        .calls[1][0];
-      createCall.onEnd({ deltaX: 10, deltaY: -100 });
+      const createCall = gestureController.create.calls.argsFor(1)[0];
+      if (createCall.onEnd) {
+        createCall.onEnd({ deltaX: 10, deltaY: -100 } as any);
+      }
 
       expect(onGesture).toHaveBeenCalledWith({
         type: 'swipe',
@@ -199,14 +204,15 @@ describe('TerminalGestureService', () => {
     });
 
     it('下スワイプが検出されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       service.createGestures(mockElement, onGesture);
 
-      const createCall = (gestureController.create as jest.Mock).mock
-        .calls[1][0];
-      createCall.onEnd({ deltaX: 10, deltaY: 100 });
+      const createCall = gestureController.create.calls.argsFor(1)[0];
+      if (createCall.onEnd) {
+        createCall.onEnd({ deltaX: 10, deltaY: 100 } as any);
+      }
 
       expect(onGesture).toHaveBeenCalledWith({
         type: 'swipe',
@@ -215,52 +221,64 @@ describe('TerminalGestureService', () => {
     });
 
     it('短いスワイプは無視されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
 
       service.createGestures(mockElement, onGesture);
 
-      const createCall = (gestureController.create as jest.Mock).mock
-        .calls[1][0];
-      createCall.onEnd({ deltaX: 30, deltaY: 30 });
+      const createCall = gestureController.create.calls.argsFor(1)[0];
+      if (createCall.onEnd) {
+        createCall.onEnd({ deltaX: 30, deltaY: 30 } as any);
+      }
 
       expect(onGesture).not.toHaveBeenCalled();
     });
   });
 
   describe('ダブルタップジェスチャー', () => {
+    let currentTime: number;
+
     beforeEach(() => {
-      jest.useFakeTimers();
+      jasmine.clock().install();
+      currentTime = 1000;
+      spyOn(Date, 'now').and.callFake(() => currentTime);
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      jasmine.clock().uninstall();
     });
 
     it('ダブルタップが検出されること', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
-      const addEventListenerSpy = jest.spyOn(
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
+      const addEventListenerSpy = spyOn(
         mockElement.nativeElement,
         'addEventListener'
-      );
+      ).and.callThrough();
 
       service.createGestures(mockElement, onGesture);
 
-      const touchHandler = addEventListenerSpy.mock
-        .calls[0][1] as EventListener;
+      // addEventListenerがtouchstartイベントで呼ばれていることを確認
+      const touchstartCalls = addEventListenerSpy.calls
+        .allArgs()
+        .filter(args => args[0] === 'touchstart');
+      expect(touchstartCalls.length).toBeGreaterThan(0);
+
+      const touchHandler = touchstartCalls[0][1] as EventListener;
 
       // 最初のタップ
-      const firstTap = new TouchEvent('touchstart', {
-        touches: [{ clientX: 100, clientY: 100 } as Touch],
-      });
+      const firstTap = {
+        touches: [{ clientX: 100, clientY: 100 }],
+        preventDefault: jasmine.createSpy('preventDefault'),
+      } as any;
       touchHandler(firstTap);
 
       // 200ms後に2回目のタップ
-      jest.advanceTimersByTime(200);
-      const secondTap = new TouchEvent('touchstart', {
-        touches: [{ clientX: 105, clientY: 105 } as Touch],
-      });
+      currentTime += 200;
+      const secondTap = {
+        touches: [{ clientX: 105, clientY: 105 }],
+        preventDefault: jasmine.createSpy('preventDefault'),
+      } as any;
       touchHandler(secondTap);
 
       expect(onGesture).toHaveBeenCalledWith({
@@ -271,58 +289,71 @@ describe('TerminalGestureService', () => {
     });
 
     it('タップ間隔が長い場合はダブルタップとして検出されないこと', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
-      const addEventListenerSpy = jest.spyOn(
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
+      const addEventListenerSpy = spyOn(
         mockElement.nativeElement,
         'addEventListener'
-      );
+      ).and.callThrough();
 
       service.createGestures(mockElement, onGesture);
 
-      const touchHandler = addEventListenerSpy.mock
-        .calls[0][1] as EventListener;
+      const touchstartCalls = addEventListenerSpy.calls
+        .allArgs()
+        .filter(args => args[0] === 'touchstart');
+      const touchHandler = touchstartCalls[0][1] as EventListener;
 
       // 最初のタップ
-      const firstTap = new TouchEvent('touchstart', {
-        touches: [{ clientX: 100, clientY: 100 } as Touch],
-      });
+      const firstTap = {
+        touches: [{ clientX: 100, clientY: 100 }],
+        preventDefault: jasmine.createSpy('preventDefault'),
+      } as any;
       touchHandler(firstTap);
 
-      // 400ms後に2回目のタップ（閾値を超える）
-      jest.advanceTimersByTime(400);
-      const secondTap = new TouchEvent('touchstart', {
-        touches: [{ clientX: 100, clientY: 100 } as Touch],
-      });
+      // onGestureが呼ばれていないことを確認
+      expect(onGesture).not.toHaveBeenCalled();
+
+      // 301ms後に2回目のタップ（閾値をちょうど超える）
+      currentTime += 301;
+      const secondTap = {
+        touches: [{ clientX: 100, clientY: 100 }],
+        preventDefault: jasmine.createSpy('preventDefault'),
+      } as any;
       touchHandler(secondTap);
 
+      // 301msは300msの閾値を超えているので、ダブルタップとして検出されない
       expect(onGesture).not.toHaveBeenCalled();
+      expect(secondTap.preventDefault).not.toHaveBeenCalled();
     });
 
     it('タップ位置が離れている場合はダブルタップとして検出されないこと', () => {
-      (platform.is as jest.Mock).mockReturnValue(true);
-      const onGesture = jest.fn();
-      const addEventListenerSpy = jest.spyOn(
+      platform.is.and.returnValue(true);
+      const onGesture = jasmine.createSpy('onGesture');
+      const addEventListenerSpy = spyOn(
         mockElement.nativeElement,
         'addEventListener'
-      );
+      ).and.callThrough();
 
       service.createGestures(mockElement, onGesture);
 
-      const touchHandler = addEventListenerSpy.mock
-        .calls[0][1] as EventListener;
+      const touchstartCalls = addEventListenerSpy.calls
+        .allArgs()
+        .filter(args => args[0] === 'touchstart');
+      const touchHandler = touchstartCalls[0][1] as EventListener;
 
       // 最初のタップ
-      const firstTap = new TouchEvent('touchstart', {
-        touches: [{ clientX: 100, clientY: 100 } as Touch],
-      });
+      const firstTap = {
+        touches: [{ clientX: 100, clientY: 100 }],
+        preventDefault: jasmine.createSpy('preventDefault'),
+      } as any;
       touchHandler(firstTap);
 
       // 200ms後に離れた位置でタップ
-      jest.advanceTimersByTime(200);
-      const secondTap = new TouchEvent('touchstart', {
-        touches: [{ clientX: 150, clientY: 150 } as Touch],
-      });
+      currentTime += 200;
+      const secondTap = {
+        touches: [{ clientX: 150, clientY: 150 }],
+        preventDefault: jasmine.createSpy('preventDefault'),
+      } as any;
       touchHandler(secondTap);
 
       expect(onGesture).not.toHaveBeenCalled();
@@ -331,96 +362,84 @@ describe('TerminalGestureService', () => {
 
   describe('createThreeFingerSwipe', () => {
     it('3本指スワイプが検出されること', () => {
-      const onGesture = jest.fn();
-      const addEventListenerSpy = jest.spyOn(
+      const onGesture = jasmine.createSpy('onGesture');
+      const addEventListenerSpy = spyOn(
         mockElement.nativeElement,
         'addEventListener'
-      );
+      ).and.callThrough();
 
-      const result = service.createThreeFingerSwipe(mockElement, onGesture);
+      service.createThreeFingerSwipe(mockElement, onGesture);
 
       expect(addEventListenerSpy).toHaveBeenCalledWith(
         'touchstart',
-        expect.any(Function),
+        jasmine.any(Function),
         { passive: true }
       );
       expect(addEventListenerSpy).toHaveBeenCalledWith(
         'touchend',
-        expect.any(Function),
+        jasmine.any(Function),
         { passive: true }
       );
 
-      const touchStartHandler = addEventListenerSpy.mock
-        .calls[0][1] as EventListener;
-      const touchEndHandler = addEventListenerSpy.mock
-        .calls[1][1] as EventListener;
+      const touchStartHandler = addEventListenerSpy.calls.argsFor(
+        0
+      )[1] as EventListener;
+      const touchEndHandler = addEventListenerSpy.calls.argsFor(
+        1
+      )[1] as EventListener;
 
       // 3本指タッチ開始
-      const touchStart = new TouchEvent('touchstart', {
-        touches: [
-          { clientX: 100 } as Touch,
-          { clientX: 150 } as Touch,
-          { clientX: 200 } as Touch,
-        ],
-      });
+      const touchStart = {
+        touches: [{ clientX: 100 }, { clientX: 150 }, { clientX: 200 }],
+      } as any;
       touchStartHandler(touchStart);
 
       // 右スワイプ
-      const touchEnd = new TouchEvent('touchend', {
-        changedTouches: [
-          { clientX: 250 } as Touch,
-          { clientX: 300 } as Touch,
-          { clientX: 350 } as Touch,
-        ],
-      });
+      const touchEnd = {
+        changedTouches: [{ clientX: 250 }, { clientX: 300 }, { clientX: 350 }],
+      } as any;
       touchEndHandler(touchEnd);
 
       expect(onGesture).toHaveBeenCalledWith('right');
     });
 
     it('左への3本指スワイプが検出されること', () => {
-      const onGesture = jest.fn();
-      const addEventListenerSpy = jest.spyOn(
+      const onGesture = jasmine.createSpy('onGesture');
+      const addEventListenerSpy = spyOn(
         mockElement.nativeElement,
         'addEventListener'
-      );
+      ).and.callThrough();
 
       service.createThreeFingerSwipe(mockElement, onGesture);
 
-      const touchStartHandler = addEventListenerSpy.mock
-        .calls[0][1] as EventListener;
-      const touchEndHandler = addEventListenerSpy.mock
-        .calls[1][1] as EventListener;
+      const touchStartHandler = addEventListenerSpy.calls.argsFor(
+        0
+      )[1] as EventListener;
+      const touchEndHandler = addEventListenerSpy.calls.argsFor(
+        1
+      )[1] as EventListener;
 
       // 3本指タッチ開始
-      const touchStart = new TouchEvent('touchstart', {
-        touches: [
-          { clientX: 250 } as Touch,
-          { clientX: 300 } as Touch,
-          { clientX: 350 } as Touch,
-        ],
-      });
+      const touchStart = {
+        touches: [{ clientX: 250 }, { clientX: 300 }, { clientX: 350 }],
+      } as any;
       touchStartHandler(touchStart);
 
       // 左スワイプ
-      const touchEnd = new TouchEvent('touchend', {
-        changedTouches: [
-          { clientX: 100 } as Touch,
-          { clientX: 150 } as Touch,
-          { clientX: 200 } as Touch,
-        ],
-      });
+      const touchEnd = {
+        changedTouches: [{ clientX: 100 }, { clientX: 150 }, { clientX: 200 }],
+      } as any;
       touchEndHandler(touchEnd);
 
       expect(onGesture).toHaveBeenCalledWith('left');
     });
 
     it('destroyメソッドがイベントリスナーを削除すること', () => {
-      const onGesture = jest.fn();
-      const removeEventListenerSpy = jest.spyOn(
+      const onGesture = jasmine.createSpy('onGesture');
+      const removeEventListenerSpy = spyOn(
         mockElement.nativeElement,
         'removeEventListener'
-      );
+      ).and.callThrough();
 
       const result = service.createThreeFingerSwipe(mockElement, onGesture);
       result.destroy();
@@ -428,11 +447,11 @@ describe('TerminalGestureService', () => {
       expect(removeEventListenerSpy).toHaveBeenCalledTimes(2);
       expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'touchstart',
-        expect.any(Function)
+        jasmine.any(Function)
       );
       expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'touchend',
-        expect.any(Function)
+        jasmine.any(Function)
       );
     });
   });
