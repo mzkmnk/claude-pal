@@ -3,27 +3,24 @@
 ## Phase 1: プロジェクト初期設定
 
 ### 環境構築
-- [ ] Ionic CLIのインストール確認
-- [ ] Node.js 20.x のインストール確認
-- [ ] 新規Ionicプロジェクトの作成
-  - [ ] `ionic start claude-pal tabs --type=angular --capacitor`
-  - [ ] プロジェクトディレクトリへ移動
-  - [ ] 初期ビルドの確認
+- [x] Ionic CLIのインストール確認
+- [x] Node.js 20.x のインストール確認
+- [x] 新規Ionicプロジェクトの作成
+  - [x] `ionic start claude-pal tabs --type=angular --capacitor`
+  - [x] プロジェクトディレクトリへ移動
+  - [x] 初期ビルドの確認
 - [ ] 必要なパッケージのインストール
   - [ ] SSH関連: `npm install ssh2 ssh2-promise node-forge`
   - [ ] ターミナル: `npm install xterm xterm-addon-fit xterm-addon-web-links`
   - [ ] セキュリティ: `npm install crypto-js`
   - [ ] UI追加: `npm install @ionic/pwa-elements`
-- [ ] Capacitorプラットフォームの追加
-  - [ ] `ionic capacitor add ios`
-  - [ ] `ionic capacitor add android`
-- [ ] TypeScript設定の調整
-  - [ ] strictモードの有効化
-  - [ ] パス エイリアスの設定
-- [ ] ESLint/Prettier設定
-  - [ ] `.eslintrc.json`の作成
-  - [ ] `.prettierrc`の作成
-  - [ ] pre-commitフックの設定
+- [x] Capacitorプラットフォームの追加
+  - [x] `ionic capacitor add ios`
+  - `ionic capacitor add android`(現状は未対応)
+- [x] ESLint/Prettier設定
+  - [x] `.eslintrc.json`の作成
+  - [x] `.prettierrc`の作成
+  - [x] pre-commitフックの設定
 
 ### プロジェクト構造の整備
 - [ ] ディレクトリ構造の作成

@@ -88,7 +88,7 @@ export function formatDate(date: Date): string {
 ```
 
 ### テスト駆動開発（TDD）
-[t-wada](https://github.com/twada)が推奨するTDDプラクティスに従う：
+**重要**: 実装する際は[t-wada](https://github.com/twada)が推奨するTDDで実装してください。
 
 1. **Red**: 失敗するテストを最初に書く
 2. **Green**: テストを通す最小限のコードを実装
