@@ -1,0 +1,55 @@
+@keyframes terminal-bell {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+// iOS特有のスタイル調整
+@supports (-webkit-touch-callout: none) {
+  .terminal-container {
+    // iOSでのスクロール改善
+    -webkit-overflow-scrolling: touch;
+
+    // テキスト選択の改善
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  ::ng-deep .xterm-viewport {
+    // iOSでのスクロールバウンス無効化
+    overscroll-behavior: none;
+  }
+}
+
+// レスポンシブ対応
+@media (max-width: 768px) {
+  ::ng-deep .xterm {
+    padding: 4px;
+  }
+}
+
+// ダークモード対応
+@media (prefers-color-scheme: dark) {
+  :host {
+    --terminal-bg: #1e1e1e;
+  }
+}
+
+// ライトモード対応
+@media (prefers-color-scheme: light) {
+  :host {
+    --terminal-bg: #ffffff;
+  }
+}
+
+// ピンチズーム無効化（ターミナル内）
+.terminal-container {
+  touch-action: pan-x pan-y;
+}

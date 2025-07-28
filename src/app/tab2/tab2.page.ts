@@ -1,6 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, ViewChild, AfterViewInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import {
   IonHeader,
   IonToolbar,
@@ -11,52 +10,56 @@ import {
   IonCardTitle,
   IonCardContent,
   IonButton,
-  IonItem,
-  IonLabel,
-  IonInput,
-  IonTextarea,
-  IonList,
-  IonText,
   IonIcon,
   IonChip,
-  IonBadge,
+  IonButtons,
+  IonLabel,
   ToastController,
+  AlertController,
   Platform,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  save,
+  terminal,
   trash,
-  download,
-  refresh,
-  checkmark,
-  close,
+  search,
+  expand,
+  contract,
+  copy,
+  colorPalette,
+  text,
 } from 'ionicons/icons';
-import { StorageService } from '../core/services';
+import {
+  TerminalComponent,
+  GestureEventData,
+} from '../shared/components/terminal';
+import { SSHService } from '../core/services/ssh.service';
 
 addIcons({
-  save,
+  terminal,
   trash,
-  download,
-  refresh,
-  checkmark,
-  close,
+  search,
+  expand,
+  contract,
+  copy,
+  colorPalette,
+  text,
 });
 
-interface StorageTestData {
-  id: number;
-  name: string;
-  data: unknown;
-  timestamp: string;
-}
-
+/**
+ * ターミナルコンポーネントのデモページ
+ *
+ * ターミナルエミュレータの機能をテストし、
+ * SSH接続のシミュレーションを行います。
+ *
+ * @component Tab2Page
+ */
 @Component({
   selector: 'app-tab2',
   templateUrl: 'tab2.page.html',
   styleUrls: ['tab2.page.scss'],
   imports: [
     CommonModule,
-    FormsModule,
     IonHeader,
     IonToolbar,
     IonTitle,
@@ -66,134 +69,338 @@ interface StorageTestData {
     IonCardTitle,
     IonCardContent,
     IonButton,
-    IonItem,
-    IonLabel,
-    IonInput,
-    IonTextarea,
-    IonList,
-    IonText,
     IonIcon,
     IonChip,
-    IonBadge,
+    IonButtons,
+    IonLabel,
+    TerminalComponent,
   ],
 })
-export class Tab2Page {
-  private storageService = inject(StorageService);
+export class Tab2Page implements AfterViewInit {
+  @ViewChild(TerminalComponent) terminal!: TerminalComponent;
+
   private toastController = inject(ToastController);
-  private platform = inject(Platform);
+  private alertController = inject(AlertController);
+  platform = inject(Platform);
+  private sshService = inject(SSHService);
 
-  testKey = 'test_key';
-  testValue = '{ "message": "Hello Storage!" }';
-  retrievedValue: string | null = null;
-  allKeys: string[] = [];
-  storageType = '';
+  isConnected = false;
+  isFullscreen = false;
+  currentTheme: 'dark' | 'light' = 'dark';
+  fontSize = 14;
 
-  constructor() {
-    this.detectStorageType();
-    this.loadAllKeys();
+  demoCommands = [
+    { cmd: 'ls -la', desc: 'ファイル一覧' },
+    { cmd: 'pwd', desc: '現在のディレクトリ' },
+    { cmd: 'echo "Hello, Claude PAL!"', desc: 'エコーテスト' },
+    { cmd: 'date', desc: '現在時刻' },
+    { cmd: 'uname -a', desc: 'システム情報' },
+  ];
+
+  ngAfterViewInit(): void {
+    // ターミナルの初期メッセージ
+    setTimeout(() => {
+      this.showWelcomeMessage();
+    }, 500);
   }
 
-  detectStorageType(): void {
-    if (this.platform.is('capacitor') || this.platform.is('cordova')) {
-      this.storageType = 'Native Storage (Capacitor Preferences)';
+  /**
+   * ウェルカムメッセージを表示する
+   * @private
+   */
+  private showWelcomeMessage(): void {
+    this.terminal.writeln('Welcome to Claude PAL Terminal Demo! 🚀');
+    this.terminal.writeln('');
+    this.terminal.writeln('This is a demonstration of the terminal component.');
+    this.terminal.writeln(
+      'Try the demo commands or connect to a mock SSH session.'
+    );
+    this.terminal.writeln('');
+    this.terminal.write('$ ');
+  }
+
+  /**
+   * ターミナルの準備完了時の処理
+   */
+  onTerminalReady(): void {
+    // ターミナルコンポーネントへの参照は@ViewChildで既に取得済み
+    console.log('Terminal ready');
+  }
+
+  /**
+   * ターミナルからのデータを処理する
+   * @param {string} data - 入力データ
+   */
+  onTerminalData(data: string): void {
+    if (!this.isConnected) {
+      // ローカルエコー（デモ用）
+      this.terminal.write(data);
+
+      // Enterキーの処理
+      if (data === '\r' || data === '\n') {
+        this.terminal.writeln('');
+        this.terminal.write('$ ');
+      }
     } else {
-      this.storageType = 'Web Storage (LocalStorage)';
+      // SSH接続中はサービスに転送
+      this.sshService.sendData(data);
     }
   }
 
-  async saveData(): Promise<void> {
-    try {
-      const data = JSON.parse(this.testValue);
-      await this.storageService.set(this.testKey, data);
-      await this.showToast('データを保存しました', 'success');
-      await this.loadAllKeys();
-    } catch (error) {
-      await this.showToast(`エラー: ${error}`, 'danger');
+  /**
+   * ターミナルのリサイズイベントを処理する
+   * @param {{ cols: number; rows: number }} size - 新しいサイズ
+   */
+  onTerminalResize(size: { cols: number; rows: number }): void {
+    console.log('Terminal resized:', size);
+    if (this.isConnected) {
+      // SSH接続中はサーバーに通知
+      this.sshService.resize(size.cols, size.rows);
     }
   }
 
-  async loadData(): Promise<void> {
-    try {
-      const data = await this.storageService.get<unknown>(this.testKey);
-      if (data !== null) {
-        this.retrievedValue = JSON.stringify(data, null, 2);
-        await this.showToast('データを取得しました', 'success');
-      } else {
-        this.retrievedValue = 'null (データが存在しません)';
-        await this.showToast('データが見つかりません', 'warning');
+  /**
+   * ジェスチャーイベントを処理する
+   * @param {GestureEventData} event - ジェスチャーイベント
+   */
+  async onGesture(event: GestureEventData): Promise<void> {
+    switch (event.type) {
+      case 'doubletap':
+        this.toggleFullscreen();
+        break;
+
+      case 'swipe':
+        if (event.direction === 'left' || event.direction === 'right') {
+          await this.showToast(`スワイプ: ${event.direction}`);
+        }
+        break;
+    }
+  }
+
+  /**
+   * デモコマンドを実行する
+   * @param {string} command - コマンド
+   */
+  executeCommand(command: string): void {
+    if (!this.isConnected) {
+      this.terminal.writeln(command);
+
+      // デモ出力を生成
+      switch (command) {
+        case 'ls -la':
+          this.terminal.writeln('total 48');
+          this.terminal.writeln(
+            'drwxr-xr-x  6 user  staff   192 Jan  1 12:00 .'
+          );
+          this.terminal.writeln(
+            'drwxr-xr-x  5 user  staff   160 Jan  1 11:00 ..'
+          );
+          this.terminal.writeln(
+            '-rw-r--r--  1 user  staff  1024 Jan  1 12:00 README.md'
+          );
+          this.terminal.writeln(
+            '-rw-r--r--  1 user  staff  2048 Jan  1 12:00 package.json'
+          );
+          this.terminal.writeln(
+            'drwxr-xr-x  4 user  staff   128 Jan  1 12:00 src'
+          );
+          this.terminal.writeln(
+            'drwxr-xr-x  3 user  staff    96 Jan  1 12:00 node_modules'
+          );
+          break;
+
+        case 'pwd':
+          this.terminal.writeln('/home/user/claude-pal');
+          break;
+
+        case 'echo "Hello, Claude PAL!"':
+          this.terminal.writeln('Hello, Claude PAL!');
+          break;
+
+        case 'date':
+          this.terminal.writeln(new Date().toString());
+          break;
+
+        case 'uname -a':
+          this.terminal.writeln(
+            'Darwin claude-pal 20.6.0 Darwin Kernel Version 20.6.0'
+          );
+          break;
       }
-    } catch (error) {
-      await this.showToast(`エラー: ${error}`, 'danger');
+
+      this.terminal.write('$ ');
     }
   }
 
-  async removeData(): Promise<void> {
-    try {
-      await this.storageService.remove(this.testKey);
-      this.retrievedValue = null;
-      await this.showToast('データを削除しました', 'success');
-      await this.loadAllKeys();
-    } catch (error) {
-      await this.showToast(`エラー: ${error}`, 'danger');
-    }
-  }
-
-  async clearAllData(): Promise<void> {
-    try {
-      await this.storageService.clear();
-      this.retrievedValue = null;
-      await this.showToast('すべてのデータを削除しました', 'success');
-      await this.loadAllKeys();
-    } catch (error) {
-      await this.showToast(`エラー: ${error}`, 'danger');
-    }
-  }
-
-  async loadAllKeys(): Promise<void> {
-    try {
-      this.allKeys = await this.storageService.keys();
-    } catch (error) {
-      await this.showToast(`キーの取得エラー: ${error}`, 'danger');
-    }
-  }
-
-  async saveMultipleItems(): Promise<void> {
-    try {
-      const testData: StorageTestData[] = [
+  /**
+   * モックSSH接続を開始する
+   */
+  async connect(): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'SSH接続デモ',
+      message: 'モックSSHセッションを開始します。実際の接続は行われません。',
+      buttons: [
         {
-          id: 1,
-          name: 'Item 1',
-          data: { value: 'test1' },
-          timestamp: new Date().toISOString(),
+          text: 'キャンセル',
+          role: 'cancel',
         },
         {
-          id: 2,
-          name: 'Item 2',
-          data: { value: 'test2' },
-          timestamp: new Date().toISOString(),
+          text: '接続',
+          handler: () => {
+            this.startMockSession();
+          },
         },
-        {
-          id: 3,
-          name: 'Item 3',
-          data: { value: 'test3' },
-          timestamp: new Date().toISOString(),
-        },
-      ];
+      ],
+    });
 
-      for (const item of testData) {
-        await this.storageService.set(`item_${item.id}`, item);
-      }
+    await alert.present();
+  }
 
-      await this.showToast('3つのテストデータを保存しました', 'success');
-      await this.loadAllKeys();
-    } catch (error) {
-      await this.showToast(`エラー: ${error}`, 'danger');
+  /**
+   * モックセッションを開始する
+   * @private
+   */
+  private async startMockSession(): Promise<void> {
+    this.terminal.clear();
+    this.terminal.writeln('Connecting to demo.server.com...');
+
+    // 接続アニメーション
+    await this.delay(500);
+    this.terminal.writeln('Connected!');
+    this.terminal.writeln('');
+
+    // SSHバナー
+    this.terminal.writeln('Welcome to Claude PAL Mock Server');
+    this.terminal.writeln('Last login: ' + new Date().toLocaleString());
+    this.terminal.writeln('');
+    this.terminal.write('user@demo:~$ ');
+
+    this.isConnected = true;
+
+    // SSHサービスのデータストリームを購読
+    this.sshService.dataStream$.subscribe((data: string) => {
+      this.terminal.write(data);
+    });
+
+    await this.showToast('モックSSHセッションを開始しました', 'success');
+  }
+
+  /**
+   * 接続を切断する
+   */
+  async disconnect(): Promise<void> {
+    if (this.isConnected) {
+      this.terminal.writeln('');
+      this.terminal.writeln('Connection closed.');
+      this.terminal.writeln('');
+      this.terminal.write('$ ');
+
+      this.isConnected = false;
+      this.sshService.disconnect();
+
+      await this.showToast('接続を切断しました', 'success');
     }
   }
 
+  /**
+   * ターミナルをクリアする
+   */
+  clearTerminal(): void {
+    this.terminal.clear();
+    if (this.isConnected) {
+      this.terminal.write('user@demo:~$ ');
+    } else {
+      this.terminal.write('$ ');
+    }
+  }
+
+  /**
+   * テーマを切り替える
+   */
+  toggleTheme(): void {
+    this.currentTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+
+    if (this.currentTheme === 'light') {
+      this.terminal.updateTheme({
+        background: '#ffffff',
+        foreground: '#333333',
+        cursor: '#333333',
+        selection: 'rgba(0, 0, 0, 0.3)',
+      });
+    } else {
+      this.terminal.updateTheme({
+        background: '#1e1e1e',
+        foreground: '#d4d4d4',
+        cursor: '#d4d4d4',
+        selection: 'rgba(255, 255, 255, 0.3)',
+      });
+    }
+  }
+
+  /**
+   * フォントサイズを変更する
+   * @param {number} delta - 変更量
+   */
+  changeFontSize(delta: number): void {
+    this.fontSize = Math.max(8, Math.min(24, this.fontSize + delta));
+    this.terminal.updateFontSize(this.fontSize);
+  }
+
+  /**
+   * 全画面モードを切り替える
+   */
+  toggleFullscreen(): void {
+    this.isFullscreen = !this.isFullscreen;
+    // 実際の全画面実装は親コンポーネントで行う
+  }
+
+  /**
+   * 検索ダイアログを表示する
+   */
+  async showSearchDialog(): Promise<void> {
+    const alert = await this.alertController.create({
+      header: '検索',
+      inputs: [
+        {
+          name: 'searchTerm',
+          type: 'text',
+          placeholder: '検索文字列を入力',
+        },
+      ],
+      buttons: [
+        {
+          text: 'キャンセル',
+          role: 'cancel',
+        },
+        {
+          text: '検索',
+          handler: data => {
+            if (data.searchTerm) {
+              this.terminal.search(data.searchTerm);
+            }
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  /**
+   * 選択テキストをコピーする
+   */
+  async copySelection(): Promise<void> {
+    this.terminal.copySelection();
+    await this.showToast('コピーしました', 'success');
+  }
+
+  /**
+   * トーストを表示する
+   * @private
+   */
   private async showToast(
     message: string,
-    color: 'success' | 'warning' | 'danger'
+    color: 'success' | 'warning' | 'danger' = 'success'
   ): Promise<void> {
     const toast = await this.toastController.create({
       message,
@@ -202,5 +409,13 @@ export class Tab2Page {
       position: 'bottom',
     });
     await toast.present();
+  }
+
+  /**
+   * 遅延を生成する
+   * @private
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
