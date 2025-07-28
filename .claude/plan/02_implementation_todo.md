@@ -115,14 +115,20 @@
   - [x] ~~`npm init @capacitor/plugin claude-pal-ssh`でプラグイン雛形作成~~ プロジェクト内に直接実装
   - [x] iOS専用プラグインとして設定（Android除外）
   - [x] Swift 5.0以上での実装準備
-- [ ] **iOSネイティブSSHライブラリの統合**
-  - [ ] NMSSH（libssh2ベース）の採用検討
-  - [ ] CocoaPodsでの依存関係設定
-  - [ ] Swiftブリッジングヘッダーの設定
 - [x] **プラグインAPIの設計**
   - [x] TypeScript定義ファイルの作成（ssh-plugin.ts）
   - [x] iOS実装とのインターフェース定義（SSHPlugin.swift, SSHPlugin.m）
   - [x] エラーハンドリング設計
+- [x] **モック実装**
+  - [x] iOSプラグインのモック実装（SSHPlugin.swift）
+  - [x] 接続/切断のシミュレーション
+  - [x] データ送受信のモック
+
+### iOSネイティブSSHライブラリの統合
+- [ ] **NMSSHライブラリの統合**
+  - [ ] NMSSH（libssh2ベース）の採用検討
+  - [ ] CocoaPodsでの依存関係設定
+  - [ ] Swiftブリッジングヘッダーの設定
 
 ### iOS SSH実装（Swift）
 - [ ] **SSH接続機能の実装**
@@ -147,11 +153,11 @@
   - [x] Capacitorプラグインメソッドの実装（connect, sendCommand, resizeWindow, disconnect）
   - [x] イベントリスナー（データ受信、状態変更）
   - [x] Promise/Callbackパターンの実装
-- [ ] **xterm.js統合**
-  - [ ] TerminalサービスでのPlugin使用
-  - [ ] データストリームのxterm.write()への接続
-  - [ ] キーボード入力のPlugin送信
-  - [ ] ウィンドウサイズ変更の同期
+- [x] **xterm.js統合（UI側）**
+  - [x] Tab3でのPlugin使用
+  - [x] データストリームのxterm.write()への接続
+  - [x] キーボード入力のPlugin送信
+  - [x] ウィンドウサイズ変更の同期
 
 ### iOS固有機能の活用
 - [ ] **Keychainとの統合**
