@@ -1,390 +1,306 @@
-# SSH鍵管理に特化したClaude PALアーキテクチャ
+# Claude PAL - モバイル端末でClaude Codeを操作するためのUIアプリ
 
 ## コンセプト
-"SSH鍵の安全な管理に特化し、接続設定はユーザーの自由に"
+"Claude Codeをスマホで快適に操作できるUI/UXに特化したアプリ"
 
 ## アプリの責任範囲
 
-### ✅ Claude PALが管理すること
-1. **SSH鍵の安全な保存**
-2. **SSH鍵の生成補助**
-3. **美しいターミナルUI**
-4. **Claude Code用の最適化されたUX**
+### ✅ Claude PALが提供すること
+1. **Claude Code専用の最適化されたモバイルUI**
+   - タッチ操作に最適化されたターミナル
+   - コード編集用の専用インターフェース
+   - よく使うコマンドへのクイックアクセス
+
+2. **SSH接続情報の管理**
+   - 接続先の保存（ホスト、ポート、ユーザー名）
+   - 複数プロファイルの管理
+   - 最後に使用した接続の記憶
+
+3. **基本的なSSH機能**
+   - パスワード/鍵認証
+   - 接続の維持と再接続
 
 ### ❌ ユーザーに任せること
-1. **ネットワーク設定**（VPN、ポート転送など）
-2. **接続方法の選択**（Tailscale、Cloudflareなど）
-3. **IPアドレス/ホスト名の管理**
+1. **高度なSSH設定**
+   - ポートフォワーディング
+   - プロキシ設定
+   - VPN設定
+   - 複雑な鍵管理（Termiusなどの専用アプリを推奨）
 
-## 実装アーキテクチャ
+2. **ネットワーク設定**
+   - VPN接続
+   - Tailscaleなどのツール設定
+   - ファイアウォール設定
+
+## 実装方針
+
+### Phase 1: バックエンド機能（優先）
+SSH接続とターミナル機能の基本実装
+
+### Phase 2: デモ用UI
+動作確認とプロトタイプ用のシンプルなUI
+
+### Phase 3: 本格的なUI/UX
+Claude Code操作に最適化された洗練されたUI
+
+## アーキテクチャ
 
 ```mermaid
 graph TB
-    subgraph "Claude PAL責任範囲"
-        KEY[SSH鍵管理]
-        UI[ターミナルUI]
-        UX[Claude専用機能]
+    subgraph "Claude PAL"
+        UI[モバイルUI]
+        CONN[接続管理]
+        TERM[ターミナル]
+        CMD[コマンドパレット]
         
-        KEY --> SEC[Secure Storage]
-        KEY --> GEN[鍵生成ツール]
-        KEY --> SYNC[デバイス間同期]
+        UI --> CONN
+        UI --> TERM
+        UI --> CMD
     end
     
-    subgraph "ユーザー責任範囲"
-        NET[ネットワーク設定]
-        VPN[VPN/Tailscale等]
-        HOST[ホスト情報]
+    subgraph "外部連携"
+        TERMIUS[Termius等のSSHアプリ]
+        SSH[SSHサーバー]
     end
     
-    UI --> |ユーザーが設定した接続情報| HOST
-    SEC --> |安全な鍵提供| UI
+    CONN --> SSH
+    TERMIUS -.->|高度な設定| SSH
+    
+    style UI fill:#f9f,stroke:#333,stroke-width:4px
 ```
 
-## SSH鍵管理の実装
+## 基本的なSSH接続実装
 
-### 1. 鍵の安全な保存（iOS）
+### 1. 接続情報の管理
 ```typescript
-import { Capacitor } from '@capacitor/core';
-import { SecureStoragePlugin } from 'capacitor-secure-storage-plugin';
-import CryptoJS from 'crypto-js';
+export interface ConnectionProfile {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  authType: 'password' | 'key';
+  // 鍵ファイルのパスまたは内容（オプション）
+  privateKey?: string;
+}
 
-export class SSHKeyManager {
-  private readonly keyPrefix = 'ssh_key_';
+export class ConnectionService {
+  private profiles: ConnectionProfile[] = [];
   
-  async savePrivateKey(keyName: string, privateKey: string, passphrase?: string) {
-    if (Capacitor.getPlatform() === 'ios') {
-      // iOS: Keychainに保存（Touch ID/Face IDで保護）
-      await SecureStoragePlugin.set({
-        key: `${this.keyPrefix}${keyName}`,
-        value: privateKey,
-        options: {
-          accessible: 'WhenUnlockedThisDeviceOnly',
-          group: 'com.claudepal.app',
-          synchronizable: false,
-          authenticationPrompt: 'SSH鍵へのアクセスを許可'
-        }
-      });
-    } else if (Capacitor.getPlatform() === 'android') {
-      // Android: Android Keystore使用
-      await this.saveToAndroidKeystore(keyName, privateKey);
-    } else {
-      // Web: 暗号化してLocalStorageに保存（開発用）
-      const encrypted = CryptoJS.AES.encrypt(privateKey, passphrase || '').toString();
-      localStorage.setItem(`${this.keyPrefix}${keyName}`, encrypted);
-    }
+  async saveProfile(profile: ConnectionProfile) {
+    // Ionic Storageに保存
+    await this.storage.set(`profile_${profile.id}`, profile);
   }
   
-  async getPrivateKey(keyName: string): Promise<string> {
-    // 生体認証でアンロック
-    const biometricResult = await this.authenticateBiometric();
-    if (!biometricResult.success) {
-      throw new Error('認証に失敗しました');
+  async loadProfiles(): Promise<ConnectionProfile[]> {
+    // 保存済みプロファイルを読み込み
+    return this.profiles;
+  }
+  
+  async getLastUsedProfile(): Promise<ConnectionProfile | null> {
+    const lastId = await this.storage.get('last_used_profile');
+    if (lastId) {
+      return await this.storage.get(`profile_${lastId}`);
     }
-    
-    // プラットフォーム別に取得
-    return await this.retrieveKey(keyName);
+    return null;
   }
 }
 ```
 
-### 2. SSH鍵生成機能
+### 2. SSH接続の基本実装
 ```typescript
-import { generateKeyPair } from 'crypto';
-
-export class SSHKeyGenerator {
-  async generateNewKeyPair(options: KeyGenOptions) {
-    return new Promise<KeyPair>((resolve, reject) => {
-      generateKeyPair('rsa', {
-        modulusLength: options.bits || 4096,
-        publicKeyEncoding: {
-          type: 'spki',
-          format: 'pem'
-        },
-        privateKeyEncoding: {
-          type: 'pkcs1',
-          format: 'pem',
-          cipher: options.passphrase ? 'aes-256-cbc' : undefined,
-          passphrase: options.passphrase
-        }
-      }, (err, publicKey, privateKey) => {
-        if (err) reject(err);
-        else resolve({ publicKey, privateKey });
-      });
-    });
+export class SSHService {
+  private connection: any = null;
+  
+  async connect(profile: ConnectionProfile) {
+    const config = {
+      host: profile.host,
+      port: profile.port,
+      username: profile.username,
+      // 認証方法に応じて設定
+      ...(profile.authType === 'password' ? {
+        password: await this.promptPassword()
+      } : {
+        privateKey: profile.privateKey
+      })
+    };
+    
+    // SSH2ライブラリを使用して接続
+    this.connection = await this.establishConnection(config);
+    
+    // ターミナルセッションを開始
+    return this.connection.shell();
   }
   
-  formatForSSH(publicKey: string): string {
-    // OpenSSH形式に変換
-    // ssh-rsa AAAAB3NzaC1yc2... user@claudepal
-    return this.convertToOpenSSHFormat(publicKey);
+  async disconnect() {
+    if (this.connection) {
+      this.connection.end();
+      this.connection = null;
+    }
   }
 }
 ```
 
-### 3. ユーザーインターフェース
+### 3. デモ用UI（Phase 2）
 ```typescript
 @Component({
   selector: 'app-connection',
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>接続設定</ion-title>
+        <ion-title>SSH接続</ion-title>
       </ion-toolbar>
     </ion-header>
     
     <ion-content>
-      <!-- SSH鍵管理セクション -->
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title>SSH鍵（アプリが管理）</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ion-list>
-            <ion-item *ngFor="let key of sshKeys">
-              <ion-label>
-                <h2>{{ key.name }}</h2>
-                <p>{{ key.fingerprint }}</p>
-              </ion-label>
-              <ion-button slot="end" (click)="copyPublicKey(key)">
-                <ion-icon name="copy"></ion-icon>
-              </ion-button>
-            </ion-item>
-          </ion-list>
-          
-          <ion-button expand="block" (click)="generateNewKey()">
-            <ion-icon name="add" slot="start"></ion-icon>
-            新しい鍵を生成
-          </ion-button>
-        </ion-card-content>
-      </ion-card>
+      <!-- シンプルな接続フォーム -->
+      <ion-list>
+        <ion-item>
+          <ion-label position="floating">ホスト</ion-label>
+          <ion-input [(ngModel)]="connection.host"></ion-input>
+        </ion-item>
+        
+        <ion-item>
+          <ion-label position="floating">ポート</ion-label>
+          <ion-input [(ngModel)]="connection.port" type="number" value="22"></ion-input>
+        </ion-item>
+        
+        <ion-item>
+          <ion-label position="floating">ユーザー名</ion-label>
+          <ion-input [(ngModel)]="connection.username"></ion-input>
+        </ion-item>
+        
+        <ion-item>
+          <ion-label>認証方法</ion-label>
+          <ion-select [(ngModel)]="connection.authType">
+            <ion-select-option value="password">パスワード</ion-select-option>
+            <ion-select-option value="key">SSH鍵</ion-select-option>
+          </ion-select>
+        </ion-item>
+        
+        <ion-item *ngIf="connection.authType === 'key'">
+          <ion-label position="floating">SSH秘密鍵</ion-label>
+          <ion-textarea [(ngModel)]="connection.privateKey" rows="5"></ion-textarea>
+        </ion-item>
+      </ion-list>
       
-      <!-- 接続情報セクション -->
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title>接続先（ユーザーが設定）</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ion-item>
-            <ion-label position="floating">ホスト名/IPアドレス</ion-label>
-            <ion-input 
-              [(ngModel)]="connection.host" 
-              placeholder="例: 192.168.1.100, mac.local, my-mac.tailscale">
-            </ion-input>
-          </ion-item>
-          
-          <ion-item>
-            <ion-label position="floating">ポート</ion-label>
-            <ion-input 
-              [(ngModel)]="connection.port" 
-              type="number" 
-              value="22">
-            </ion-input>
-          </ion-item>
-          
-          <ion-item>
-            <ion-label position="floating">ユーザー名</ion-label>
-            <ion-input [(ngModel)]="connection.username"></ion-input>
-          </ion-item>
-          
-          <ion-item>
-            <ion-label>SSH鍵を選択</ion-label>
-            <ion-select [(ngModel)]="connection.keyName">
-              <ion-select-option *ngFor="let key of sshKeys" [value]="key.name">
-                {{ key.name }}
-              </ion-select-option>
-            </ion-select>
-          </ion-item>
-          
-          <ion-note>
-            <p>接続方法の例：</p>
-            <ul>
-              <li>同一WiFi: 192.168.1.100 または mac.local</li>
-              <li>Tailscale使用時: my-mac.tailscale</li>
-              <li>ポート転送時: my-domain.com:2222</li>
-            </ul>
-          </ion-note>
-        </ion-card-content>
-      </ion-card>
+      <ion-button expand="block" (click)="connect()">接続</ion-button>
       
-      <ion-button expand="block" (click)="connect()" [disabled]="!canConnect()">
-        接続
-      </ion-button>
+      <!-- 保存済みプロファイル -->
+      <ion-list *ngIf="profiles.length > 0">
+        <ion-list-header>保存済み接続</ion-list-header>
+        <ion-item *ngFor="let profile of profiles" (click)="loadProfile(profile)">
+          <ion-label>
+            <h2>{{ profile.name }}</h2>
+            <p>{{ profile.username }}@{{ profile.host }}:{{ profile.port }}</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
     </ion-content>
   `
 })
 export class ConnectionPage {
-  sshKeys: SSHKey[] = [];
   connection = {
     host: '',
     port: 22,
     username: '',
-    keyName: ''
+    authType: 'password',
+    privateKey: ''
   };
   
-  async generateNewKey() {
-    const alert = await this.alertController.create({
-      header: '新しいSSH鍵を生成',
-      inputs: [
-        {
-          name: 'keyName',
-          type: 'text',
-          placeholder: '鍵の名前（例: Claude PAL Key）'
-        },
-        {
-          name: 'passphrase',
-          type: 'password',
-          placeholder: 'パスフレーズ（オプション）'
-        }
-      ],
-      buttons: [
-        { text: 'キャンセル', role: 'cancel' },
-        {
-          text: '生成',
-          handler: async (data) => {
-            const keyPair = await this.keyGenerator.generateNewKeyPair({
-              bits: 4096,
-              passphrase: data.passphrase
-            });
-            
-            await this.keyManager.savePrivateKey(
-              data.keyName,
-              keyPair.privateKey,
-              data.passphrase
-            );
-            
-            // 公開鍵をクリップボードにコピー
-            await Clipboard.write({
-              string: this.keyGenerator.formatForSSH(keyPair.publicKey)
-            });
-            
-            await this.showToast('SSH鍵を生成しました。公開鍵をコピーしました。');
-            await this.loadKeys();
-          }
-        }
-      ]
-    });
-    
-    await alert.present();
-  }
-  
-  async copyPublicKey(key: SSHKey) {
-    const publicKey = await this.keyManager.getPublicKey(key.name);
-    await Clipboard.write({ string: publicKey });
-    await this.showToast('公開鍵をコピーしました');
-  }
+  profiles: ConnectionProfile[] = [];
   
   async connect() {
     try {
-      // SSH鍵を安全に取得（生体認証）
-      const privateKey = await this.keyManager.getPrivateKey(this.connection.keyName);
-      
-      // 接続を試行
-      await this.sshService.connect({
-        host: this.connection.host,
-        port: this.connection.port,
-        username: this.connection.username,
-        privateKey: privateKey
-      });
-      
-      // 接続成功したら設定を保存
-      await this.saveConnectionPreference();
-      
-      // ターミナル画面へ遷移
+      await this.sshService.connect(this.connection);
       await this.router.navigate(['/terminal']);
     } catch (error) {
-      await this.showError('接続に失敗しました: ' + error.message);
+      await this.showError('接続エラー: ' + error.message);
     }
   }
 }
 ```
 
-### 4. セットアップガイド
+### 4. Claude Code専用UI機能（Phase 3で実装）
 ```typescript
-@Component({
-  template: `
-    <ion-slides>
-      <ion-slide>
-        <h2>ステップ1: SSH鍵の生成</h2>
-        <p>アプリ内で安全なSSH鍵を生成します</p>
-        <ion-button (click)="generateKey()">鍵を生成</ion-button>
-      </ion-slide>
-      
-      <ion-slide>
-        <h2>ステップ2: 公開鍵の登録</h2>
-        <p>生成された公開鍵をMacに登録してください</p>
-        <code>{{ publicKey }}</code>
-        <ion-button (click)="copyPublicKey()">コピー</ion-button>
-        <p class="instructions">
-          Macのターミナルで実行:<br>
-          echo "{{ publicKey }}" >> ~/.ssh/authorized_keys
-        </p>
-      </ion-slide>
-      
-      <ion-slide>
-        <h2>ステップ3: 接続方法の選択</h2>
-        <p>お好みの方法でMacにアクセスできるようにしてください</p>
-        <ion-list>
-          <ion-item>
-            <ion-label>
-              <h3>同一WiFi内</h3>
-              <p>設定不要。MacのIPアドレスを使用</p>
-            </ion-label>
-          </ion-item>
-          <ion-item>
-            <ion-label>
-              <h3>Tailscale（推奨）</h3>
-              <p>簡単で安全な外部アクセス</p>
-            </ion-label>
-          </ion-item>
-          <ion-item>
-            <ion-label>
-              <h3>その他</h3>
-              <p>お好みのVPNやトンネリングツール</p>
-            </ion-label>
-          </ion-item>
-        </ion-list>
-      </ion-slide>
-    </ion-slides>
-  `
-})
-export class SetupGuidePage {}
+// クイックコマンド機能
+export interface QuickCommand {
+  label: string;
+  command: string;
+  icon?: string;
+}
+
+const CLAUDE_CODE_COMMANDS: QuickCommand[] = [
+  { label: 'ファイル一覧', command: 'ls -la', icon: 'list' },
+  { label: 'ディレクトリ移動', command: 'cd ', icon: 'folder' },
+  { label: 'ファイル編集', command: 'nano ', icon: 'create' },
+  { label: 'Git Status', command: 'git status', icon: 'git-branch' },
+  { label: 'Git Pull', command: 'git pull', icon: 'cloud-download' },
+  { label: 'Git Commit', command: 'git commit -m ""', icon: 'checkmark' },
+  { label: 'プロセス確認', command: 'ps aux | grep', icon: 'analytics' },
+  { label: 'ログ確認', command: 'tail -f ', icon: 'document-text' }
+];
+
+// ジェスチャー操作
+export class GestureHandler {
+  setupGestures(terminalElement: HTMLElement) {
+    // スワイプでコマンドパレット表示
+    const gesture = createGesture({
+      el: terminalElement,
+      gestureName: 'swipe-up',
+      onMove: (ev) => this.handleSwipe(ev),
+      onEnd: () => this.showCommandPalette()
+    });
+    
+    gesture.enable();
+  }
+}
 ```
-
-## メリット
-
-### 開発側
-1. **責任範囲が明確**: SSH鍵管理のみに集中
-2. **実装がシンプル**: ネットワーク設定の複雑さを回避
-3. **セキュリティ**: 鍵管理に特化して高セキュリティを実現
-
-### ユーザー側
-1. **柔軟性**: 好きな接続方法を選べる
-2. **既存環境の活用**: すでに設定済みのVPN等を使える
-3. **安心感**: 鍵は安全にアプリが管理
 
 ## 実装ロードマップ
 
-### Phase 1: コア機能（2週間）
-- [ ] SSH鍵の生成
-- [ ] Secure Storageへの保存
-- [ ] 基本的な接続機能
+### Phase 1: バックエンド機能（1週間）優先実装
+- [ ] SSH接続サービスの基本実装
+- [ ] ターミナルエミュレーターの統合
+- [ ] 接続プロファイルの保存機能
+- [ ] 基本的な認証（パスワード/鍵）
 
-### Phase 2: UI/UX（2週間）
-- [ ] 美しいターミナルUI
-- [ ] Claude Code専用の最適化
+### Phase 2: デモ用UI（3日）
+- [ ] シンプルな接続画面
+- [ ] 基本的なターミナル画面
+- [ ] 最低限の設定画面
+
+### Phase 3: 本格的なUI/UX（2週間）
+- [ ] Claude Code専用のコマンドパレット
+- [ ] タッチ操作に最適化されたUI
 - [ ] ジェスチャー操作
+- [ ] テーマとカスタマイズ
+- [ ] 高度なターミナル機能
 
-### Phase 3: 便利機能（2週間）
-- [ ] 複数の鍵管理
-- [ ] 接続プロファイル保存
-- [ ] セットアップウィザード
+## 外部アプリとの連携
+
+### Termiusなどとの使い分け
+```
+Claude PAL：
+- Claude Code操作に特化
+- シンプルな接続
+- 専用UI/UX
+
+Termius等：
+- 高度なSSH機能
+- 複雑な鍵管理
+- ポートフォワーディング
+```
+
+### 連携例
+1. 複雑な設定はTermiusで行う
+2. 日常的なClaude Code操作はClaude PALで
+3. 必要に応じて両方を併用
 
 ## まとめ
 
-この方法なら：
-- **ネットワーク設定の責任を負わない**
-- **SSH鍵管理で明確な価値を提供**
-- **実装がシンプルで保守しやすい**
-- **ユーザーの自由度が高い**
-
-完璧なバランスの取れたアプローチです！
+このアプローチにより：
+- **開発がシンプル**: 基本的なSSH機能のみに集中
+- **UXに注力**: Claude Code専用の最適化に時間を使える
+- **段階的実装**: バックエンド→デモUI→本格UIの順で確実に進められる
+- **実用的**: ユーザーは既存のSSHツールと併用可能
