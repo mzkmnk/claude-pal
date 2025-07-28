@@ -1,6 +1,6 @@
 import Capacitor
 import Foundation
-// import GZ_SwiftSH  // TODO: ビルドエラー解決後に有効化
+import GZ_SwiftSH
 
 /**
  * SSH接続を管理するCapacitorプラグイン
@@ -20,9 +20,7 @@ public class SSHPlugin: CAPPlugin {
      * SwiftSHのSSHShellオブジェクトを管理するディクショナリ
      * キー: セッションID、値: SSHShellオブジェクト
      */
-    // TODO: SwiftSH統合後に有効化
-    // private var sshConnections: [String: SSHShell] = []
-    private var sshConnections: [String: Any] = [:]  // 一時的にAny型を使用
+    private var sshConnections: [String: SSHShell] = [:]
     
     /**
      * SSH接続を確立する
@@ -70,11 +68,8 @@ public class SSHPlugin: CAPPlugin {
                     throw SSHError.missingAuthCredentials
                 }
                 
-                // TODO: SwiftSHを使用してSSH接続を確立
-                // try self.connectWithSwiftSH(session: session)
-                
-                // 一時的にモック実装を使用（実機でも動作確認のため）
-                self.mockConnect(session: session)
+                // SwiftSHを使用してSSH接続を確立
+                try self.connectWithSwiftSH(session: session)
                 
                 // セッションを保存
                 self.sessions[sessionId] = session
@@ -121,11 +116,8 @@ public class SSHPlugin: CAPPlugin {
             return
         }
         
-        // TODO: SwiftSHを使用してコマンドを送信
-        // sendCommandWithSwiftSH(session: session, command: command)
-        
-        // 一時的にモック実装を使用
-        mockSendCommand(session: session, command: command)
+        // SwiftSHを使用してコマンドを送信
+        sendCommandWithSwiftSH(session: session, command: command)
         
         call.resolve()
     }
@@ -151,10 +143,10 @@ public class SSHPlugin: CAPPlugin {
         session.cols = cols
         session.rows = rows
         
-        // TODO: SwiftSHのシェルのPTYサイズを更新
-        // if let shell = sshConnections[sessionId] {
-        //     shell.setTerminalSize(width: UInt16(cols), height: UInt16(rows))
-        // }
+        // SwiftSHのシェルのPTYサイズを更新
+        if let shell = sshConnections[sessionId] as? SSHShell {
+            shell.setTerminalSize(width: UInt16(cols), height: UInt16(rows))
+        }
         
         call.resolve()
     }
@@ -175,12 +167,12 @@ public class SSHPlugin: CAPPlugin {
             return
         }
         
-        // TODO: SwiftSHの接続を切断
-        // if let shell = sshConnections[sessionId] {
-        //     shell.disconnect { _ in
-        //         print("セッション \(sessionId) を切断しました")
-        //     }
-        // }
+        // SwiftSHの接続を切断
+        if let shell = sshConnections[sessionId] {
+            shell.disconnect { _ in
+                print("セッション \(sessionId) を切断しました")
+            }
+        }
         
         // セッションを削除
         sessions.removeValue(forKey: sessionId)
@@ -203,8 +195,6 @@ public class SSHPlugin: CAPPlugin {
      * @param session SSHセッション
      * @throws SSHError SSH接続エラー
      */
-    // TODO: SwiftSH統合後に有効化
-    /*
     private func connectWithSwiftSH(session: SSHSession) throws {
         // 認証チャレンジを作成
         let challenge: AuthenticationChallenge
@@ -301,10 +291,7 @@ public class SSHPlugin: CAPPlugin {
             throw SSHError.connectionFailed(error.localizedDescription)
         }
     }
-    */
     
-    // TODO: SwiftSH統合後に有効化
-    /*
     /**
      * SwiftSHを使用してコマンドを送信する
      * 
@@ -324,7 +311,6 @@ public class SSHPlugin: CAPPlugin {
             }
         }
     }
-    */
     
     // MARK: - モック実装（開発用）
     
