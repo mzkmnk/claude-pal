@@ -40,7 +40,11 @@ import {
   MigrationService,
 } from '../core/services';
 import { ConnectionProfile, AppSettings } from '../core/models';
-import { MessageComponent, Message, MessageType } from '../shared/components/message';
+import {
+  MessageComponent,
+  Message,
+  MessageType,
+} from '../shared/components/message';
 
 @Component({
   selector: 'app-tab3',
