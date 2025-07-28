@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ViewChild, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -21,6 +21,10 @@ import {
   IonSegment,
   IonSegmentButton,
   ToastController,
+  IonSelect,
+  IonSelectOption,
+  LoadingController,
+  AlertController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -31,6 +35,8 @@ import {
   lockClosedOutline,
   copyOutline,
   send,
+  terminal,
+  close,
 } from 'ionicons/icons';
 
 import {
@@ -45,6 +51,9 @@ import {
   Message,
   MessageType,
 } from '../shared/components/message';
+import { TerminalComponent } from '../shared/components/terminal/terminal.component';
+import { SSH } from '../core/plugins/ssh-plugin';
+import type { PluginListenerHandle } from '@capacitor/core';
 
 @Component({
   selector: 'app-tab3',
@@ -71,17 +80,24 @@ import {
     IonToggle,
     IonSegment,
     IonSegmentButton,
+    IonSelect,
+    IonSelectOption,
     MessageComponent,
+    TerminalComponent,
   ],
 })
-export class Tab3Page {
+export class Tab3Page implements OnDestroy {
+  @ViewChild(TerminalComponent) terminalComponent!: TerminalComponent;
+
   private profileStorage = inject(ProfileStorageService);
   private appSettings = inject(AppSettingsService);
   private encryption = inject(EncryptionService);
   private migration = inject(MigrationService);
   private toastController = inject(ToastController);
+  private loadingController = inject(LoadingController);
+  private alertController = inject(AlertController);
 
-  selectedTab = 'messages';
+  selectedTab = 'ssh';
 
   // メッセージ関連
   demoMessages: Message[] = [];
@@ -111,6 +127,21 @@ export class Tab3Page {
   // マイグレーション関連
   currentVersion = '';
 
+  // SSH接続関連
+  connectionForm = {
+    host: '192.168.1.100',
+    port: 22,
+    username: 'user',
+    authType: 'password' as 'password' | 'key',
+    password: '',
+    privateKey: '',
+    passphrase: '',
+  };
+  sessionId: string | null = null;
+  isConnected = false;
+  private dataListener: PluginListenerHandle | null = null;
+  private stateListener: PluginListenerHandle | null = null;
+
   constructor() {
     addIcons({
       saveOutline,
@@ -120,6 +151,8 @@ export class Tab3Page {
       lockClosedOutline,
       copyOutline,
       send,
+      terminal,
+      close,
     });
     this.loadData();
     this.initializeDemoMessages();
@@ -430,5 +463,142 @@ print(fibonacci(10))  # 55
     this.demoMessages = [];
     this.messageIdCounter = 1;
     this.initializeDemoMessages();
+  }
+
+  // SSH接続機能
+  async connectSSH() {
+    const loading = await this.loadingController.create({
+      message: '接続中...',
+    });
+    await loading.present();
+
+    try {
+      await this.setupListeners();
+
+      const connectionOptions = {
+        host: this.connectionForm.host,
+        port: this.connectionForm.port,
+        username: this.connectionForm.username,
+        ...(this.connectionForm.authType === 'password'
+          ? { password: this.connectionForm.password }
+          : {
+              privateKey: this.connectionForm.privateKey,
+              passphrase: this.connectionForm.passphrase,
+            }),
+      };
+
+      const result = await SSH.connect(connectionOptions);
+      this.sessionId = result.sessionId;
+      this.isConnected = true;
+
+      await this.showToast('接続に成功しました');
+    } catch (error) {
+      await this.showToast(
+        `接続エラー: ${error instanceof Error ? error.message : '不明なエラー'}`,
+        'danger'
+      );
+    } finally {
+      await loading.dismiss();
+    }
+  }
+
+  async disconnectSSH() {
+    if (!this.sessionId) return;
+
+    const alert = await this.alertController.create({
+      header: '切断確認',
+      message: 'SSH接続を切断しますか？',
+      buttons: [
+        {
+          text: 'キャンセル',
+          role: 'cancel',
+        },
+        {
+          text: '切断',
+          handler: async () => {
+            try {
+              await SSH.disconnect({ sessionId: this.sessionId! });
+              this.sessionId = null;
+              this.isConnected = false;
+              await this.cleanupListeners();
+
+              if (this.terminalComponent) {
+                this.terminalComponent.clear();
+              }
+
+              await this.showToast('切断しました');
+            } catch (error) {
+              await this.showToast('切断エラー', 'danger');
+            }
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  private async setupListeners() {
+    this.dataListener = await SSH.addListener('dataReceived', data => {
+      if (data.sessionId === this.sessionId && this.terminalComponent) {
+        this.terminalComponent.write(data.data);
+      }
+    });
+
+    this.stateListener = await SSH.addListener(
+      'connectionStateChanged',
+      async data => {
+        if (data.state === 'disconnected') {
+          this.sessionId = null;
+          this.isConnected = false;
+          await this.showToast('接続が切断されました', 'warning');
+        } else if (data.state === 'error') {
+          await this.showToast(
+            `エラー: ${data.error || '不明なエラー'}`,
+            'danger'
+          );
+        }
+      }
+    );
+  }
+
+  private async cleanupListeners() {
+    if (this.dataListener) {
+      await this.dataListener.remove();
+      this.dataListener = null;
+    }
+    if (this.stateListener) {
+      await this.stateListener.remove();
+      this.stateListener = null;
+    }
+  }
+
+  onTerminalData(data: string) {
+    if (this.sessionId) {
+      SSH.sendCommand({ sessionId: this.sessionId, command: data }).catch(
+        error => {
+          console.error('コマンド送信エラー:', error);
+        }
+      );
+    }
+  }
+
+  onTerminalResize(event: { cols: number; rows: number }) {
+    if (this.sessionId) {
+      SSH.resizeWindow({
+        sessionId: this.sessionId,
+        cols: event.cols,
+        rows: event.rows,
+      }).catch(error => {
+        console.error('リサイズエラー:', error);
+      });
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.sessionId) {
+      SSH.disconnect({ sessionId: this.sessionId });
+    }
+    this.cleanupListeners();
   }
 }
