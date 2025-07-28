@@ -539,15 +539,22 @@ print(fibonacci(10))  # 55
   }
 
   private async setupListeners() {
-    this.dataListener = await SSH.addListener('dataReceived', data => {
-      if (data.sessionId === this.sessionId && this.terminalComponent) {
-        this.terminalComponent.write(data.data);
+    this.dataListener = await SSH.addListener(
+      'dataReceived',
+      (data: { sessionId: string; data: string }) => {
+        if (data.sessionId === this.sessionId && this.terminalComponent) {
+          this.terminalComponent.write(data.data);
+        }
       }
-    });
+    );
 
     this.stateListener = await SSH.addListener(
       'connectionStateChanged',
-      async data => {
+      async (data: {
+        sessionId: string;
+        state: 'connected' | 'disconnected' | 'error';
+        error?: string;
+      }) => {
         if (data.state === 'disconnected') {
           this.sessionId = null;
           this.isConnected = false;
@@ -576,7 +583,7 @@ print(fibonacci(10))  # 55
   onTerminalData(data: string) {
     if (this.sessionId) {
       SSH.sendCommand({ sessionId: this.sessionId, command: data }).catch(
-        error => {
+        (error: Error) => {
           console.error('コマンド送信エラー:', error);
         }
       );
@@ -589,7 +596,7 @@ print(fibonacci(10))  # 55
         sessionId: this.sessionId,
         cols: event.cols,
         rows: event.rows,
-      }).catch(error => {
+      }).catch((error: Error) => {
         console.error('リサイズエラー:', error);
       });
     }

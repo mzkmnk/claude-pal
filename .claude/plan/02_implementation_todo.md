@@ -111,18 +111,18 @@
 ## Phase 3: iOS専用バックエンド機能実装（最優先）
 
 ### Capacitor SSH Plugin開発（iOS専用）
-- [ ] **カスタムCapacitorプラグインの作成**
-  - [ ] `npm init @capacitor/plugin claude-pal-ssh`でプラグイン雛形作成
-  - [ ] iOS専用プラグインとして設定（Android除外）
-  - [ ] Swift 5.0以上での実装準備
+- [x] **カスタムCapacitorプラグインの作成**
+  - [x] ~~`npm init @capacitor/plugin claude-pal-ssh`でプラグイン雛形作成~~ プロジェクト内に直接実装
+  - [x] iOS専用プラグインとして設定（Android除外）
+  - [x] Swift 5.0以上での実装準備
 - [ ] **iOSネイティブSSHライブラリの統合**
   - [ ] NMSSH（libssh2ベース）の採用検討
   - [ ] CocoaPodsでの依存関係設定
   - [ ] Swiftブリッジングヘッダーの設定
-- [ ] **プラグインAPIの設計**
-  - [ ] TypeScript定義ファイルの作成
-  - [ ] iOS実装とのインターフェース定義
-  - [ ] エラーハンドリング設計
+- [x] **プラグインAPIの設計**
+  - [x] TypeScript定義ファイルの作成（ssh-plugin.ts）
+  - [x] iOS実装とのインターフェース定義（SSHPlugin.swift, SSHPlugin.m）
+  - [x] エラーハンドリング設計
 
 ### iOS SSH実装（Swift）
 - [ ] **SSH接続機能の実装**
@@ -143,10 +143,10 @@
   - [ ] バッファ管理とフロー制御
 
 ### Capacitorブリッジ実装
-- [ ] **JavaScript⇔Native通信**
-  - [ ] Capacitorプラグインメソッドの実装
-  - [ ] イベントリスナー（データ受信、状態変更）
-  - [ ] Promise/Callbackパターンの実装
+- [x] **JavaScript⇔Native通信**
+  - [x] Capacitorプラグインメソッドの実装（connect, sendCommand, resizeWindow, disconnect）
+  - [x] イベントリスナー（データ受信、状態変更）
+  - [x] Promise/Callbackパターンの実装
 - [ ] **xterm.js統合**
   - [ ] TerminalサービスでのPlugin使用
   - [ ] データストリームのxterm.write()への接続
@@ -165,13 +165,17 @@
 
 ## Phase 4: UIコンポーネント実装
 
-### デモUI実装（Tab1）
-- [x] SSH鍵管理デモ画面の作成
+### デモUI実装（Tab1, Tab3）
+- [x] SSH鍵管理デモ画面の作成（Tab1）
 - [x] 鍵生成フォームの実装
 - [x] 鍵一覧表示の実装
 - [x] 鍵詳細表示機能
 - [x] 公開鍵コピー機能
 - [x] 鍵削除機能（確認ダイアログ付き）
+- [x] SSH接続デモ画面の作成（Tab3）
+  - [x] 接続フォーム（ホスト、ポート、ユーザー名、認証方法）
+  - [x] ターミナルコンポーネントとの統合
+  - [x] 接続/切断機能
 
 ### ターミナルコンポーネント
 - [x] `terminal.component.ts`の作成
