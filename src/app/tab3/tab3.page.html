@@ -1,17 +1,20 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>ストレージサービス動作確認</ion-title>
+    <ion-title>メッセージコンポーネント動作確認</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">ストレージサービス</ion-title>
+      <ion-title size="large">メッセージデモ</ion-title>
     </ion-toolbar>
   </ion-header>
 
   <ion-segment [(ngModel)]="selectedTab" mode="md">
+    <ion-segment-button value="messages">
+      <ion-label>メッセージ</ion-label>
+    </ion-segment-button>
     <ion-segment-button value="profile">
       <ion-label>プロファイル</ion-label>
     </ion-segment-button>
@@ -25,6 +28,51 @@
       <ion-label>マイグレーション</ion-label>
     </ion-segment-button>
   </ion-segment>
+
+  <div *ngIf="selectedTab === 'messages'">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>メッセージ表示デモ</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="messages-container">
+          <app-message
+            *ngFor="let message of demoMessages"
+            [message]="message"
+          ></app-message>
+        </div>
+        
+        <ion-item class="ion-margin-top">
+          <ion-label position="floating">新しいメッセージを追加</ion-label>
+          <ion-input
+            [(ngModel)]="newMessageContent"
+            placeholder="メッセージを入力してください"
+          ></ion-input>
+          <ion-button slot="end" (click)="addMessage()">
+            <ion-icon slot="icon-only" name="send"></ion-icon>
+          </ion-button>
+        </ion-item>
+        
+        <div class="ion-padding">
+          <ion-button expand="block" (click)="addUserMessage()">
+            ユーザーメッセージを追加
+          </ion-button>
+          <ion-button expand="block" (click)="addClaudeMessage()">
+            Claudeメッセージを追加
+          </ion-button>
+          <ion-button expand="block" (click)="addSystemMessage()">
+            システムメッセージを追加
+          </ion-button>
+          <ion-button expand="block" color="danger" (click)="addErrorMessage()">
+            エラーメッセージを追加
+          </ion-button>
+          <ion-button expand="block" color="warning" (click)="clearMessages()">
+            メッセージをクリア
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
 
   <div *ngIf="selectedTab === 'profile'">
     <ion-card>

@@ -30,6 +30,7 @@ import {
   keyOutline,
   lockClosedOutline,
   copyOutline,
+  send,
 } from 'ionicons/icons';
 
 import {
@@ -39,6 +40,7 @@ import {
   MigrationService,
 } from '../core/services';
 import { ConnectionProfile, AppSettings } from '../core/models';
+import { MessageComponent, Message, MessageType } from '../shared/components/message';
 
 @Component({
   selector: 'app-tab3',
@@ -65,6 +67,7 @@ import { ConnectionProfile, AppSettings } from '../core/models';
     IonToggle,
     IonSegment,
     IonSegmentButton,
+    MessageComponent,
   ],
 })
 export class Tab3Page {
@@ -74,7 +77,12 @@ export class Tab3Page {
   private migration = inject(MigrationService);
   private toastController = inject(ToastController);
 
-  selectedTab = 'profile';
+  selectedTab = 'messages';
+
+  // メッセージ関連
+  demoMessages: Message[] = [];
+  newMessageContent = '';
+  private messageIdCounter = 1;
 
   // プロファイル関連
   profiles: ConnectionProfile[] = [];
@@ -107,8 +115,10 @@ export class Tab3Page {
       keyOutline,
       lockClosedOutline,
       copyOutline,
+      send,
     });
     this.loadData();
+    this.initializeDemoMessages();
   }
 
   async loadData() {
@@ -289,5 +299,132 @@ export class Tab3Page {
       position: 'bottom',
     });
     await toast.present();
+  }
+
+  // メッセージデモ機能
+  initializeDemoMessages() {
+    this.demoMessages = [
+      {
+        id: this.generateMessageId(),
+        type: MessageType.SYSTEM,
+        content: 'メッセージコンポーネントのデモへようこそ！',
+        timestamp: new Date(),
+      },
+      {
+        id: this.generateMessageId(),
+        type: MessageType.USER,
+        content: 'こんにちは、Claude！TypeScriptについて教えてください。',
+        timestamp: new Date(Date.now() - 60000),
+      },
+      {
+        id: this.generateMessageId(),
+        type: MessageType.CLAUDE,
+        content: `TypeScriptはMicrosoftが開発した、JavaScriptに静的型付けを追加したプログラミング言語です。
+
+以下は簡単な例です：
+
+\`\`\`typescript
+interface User {
+  name: string;
+  age: number;
+}
+
+function greetUser(user: User): string {
+  return \`Hello, \${user.name}! You are \${user.age} years old.\`;
+}
+
+const john: User = {
+  name: "John Doe",
+  age: 30
+};
+
+console.log(greetUser(john));
+\`\`\`
+
+TypeScriptの主な特徴：
+- 静的型付けによるコンパイル時エラー検出
+- 優れたIDEサポート
+- 最新のECMAScript機能のサポート`,
+        timestamp: new Date(Date.now() - 30000),
+      },
+    ];
+  }
+
+  generateMessageId(): string {
+    return `msg_${this.messageIdCounter++}_${Date.now()}`;
+  }
+
+  addMessage() {
+    if (!this.newMessageContent.trim()) {
+      return;
+    }
+
+    const message: Message = {
+      id: this.generateMessageId(),
+      type: MessageType.USER,
+      content: this.newMessageContent,
+      timestamp: new Date(),
+    };
+
+    this.demoMessages.push(message);
+    this.newMessageContent = '';
+  }
+
+  addUserMessage() {
+    const message: Message = {
+      id: this.generateMessageId(),
+      type: MessageType.USER,
+      content: 'これはユーザーからのメッセージです。',
+      timestamp: new Date(),
+    };
+    this.demoMessages.push(message);
+  }
+
+  addClaudeMessage() {
+    const message: Message = {
+      id: this.generateMessageId(),
+      type: MessageType.CLAUDE,
+      content: `Claudeからの返答です。
+
+\`\`\`python
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+# 使用例
+print(fibonacci(10))  # 55
+\`\`\`
+
+このコードはフィボナッチ数列のn番目の値を計算します。`,
+      timestamp: new Date(),
+    };
+    this.demoMessages.push(message);
+  }
+
+  addSystemMessage() {
+    const message: Message = {
+      id: this.generateMessageId(),
+      type: MessageType.SYSTEM,
+      content: 'システムからの通知：接続が確立されました。',
+      timestamp: new Date(),
+    };
+    this.demoMessages.push(message);
+  }
+
+  addErrorMessage() {
+    const message: Message = {
+      id: this.generateMessageId(),
+      type: MessageType.ERROR,
+      content: 'エラー：接続がタイムアウトしました。再度お試しください。',
+      timestamp: new Date(),
+    };
+    this.demoMessages.push(message);
+  }
+
+  clearMessages() {
+    this.demoMessages = [];
+    this.messageIdCounter = 1;
+    this.initializeDemoMessages();
   }
 }

@@ -1,0 +1,27 @@
+<div [ngClass]="messageClass()">
+  <div class="message-header">
+    @if (message().type === MessageType.USER) {
+    <span class="message-author">You</span>
+    } @else if (message().type === MessageType.CLAUDE) {
+    <span class="message-author">Claude</span>
+    } @else if (message().type === MessageType.SYSTEM) {
+    <span class="message-author">System</span>
+    } @else if (message().type === MessageType.ERROR) {
+    <span class="message-author">Error</span>
+    }
+    <span class="message-timestamp">{{ formattedTimestamp() }}</span>
+  </div>
+
+  <div class="message-content">
+    @for (part of parsedContent(); track $index) { @if (part.type === 'text') {
+    <span class="message-text">{{ part.content }}</span>
+    } @else if (part.type === 'code') {
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-language">{{ part.language }}</span>
+      </div>
+      <pre><code [attr.data-language]="part.language">{{ part.content }}</code></pre>
+    </div>
+    } }
+  </div>
+</div>
