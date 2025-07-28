@@ -1,5 +1,12 @@
 # Claude PAL 実装計画書（TODO）
 
+## プロジェクト方針
+- **目的**: Claude CodeをiPhoneで快適に操作するためのUI/UXに特化したアプリ
+- **ターゲット**: iOS専用（iPhone/iPad）
+- **SSH接続**: シンプルな実装（高度な機能はTermius等に任せる）
+- **実装順序**: iOS専用バックエンド → デモUI → 本格的UI
+- **iOS固有機能の活用**: Keychain、Touch ID/Face ID、Haptic Feedback等
+
 ## プラットフォーム対応状況
 
 ### 現在の対応プラットフォーム
@@ -23,17 +30,21 @@
   - [x] プロジェクトディレクトリへ移動
   - [x] 初期ビルドの確認
 - [x] 必要なパッケージのインストール
-  - [x] SSH関連: ~~`npm install ssh2 ssh2-promise`~~ (モバイルでは使用不可、ネイティブ実装予定) `node-forge`
+  - [x] SSH関連: `node-forge`（鍵生成用、SSH接続はネイティブ実装）
   - [x] ターミナル: `npm install xterm xterm-addon-fit xterm-addon-web-links`
   - [x] セキュリティ: `npm install crypto-js`
   - [x] UI追加: `npm install @ionic/pwa-elements`
 - [x] Capacitorプラットフォームの追加
   - [x] `ionic capacitor add ios`
-  - [x] Androidプラットフォームは未対応（iOSのみ対応）
 - [x] ESLint/Prettier設定
   - [x] `.eslintrc.json`の作成
   - [x] `.prettierrc`の作成
   - [x] pre-commitフックの設定
+- [ ] **iOS開発環境の設定**
+  - [ ] Xcode 15以上のインストール確認
+  - [ ] iOS Simulatorの設定
+  - [ ] 開発用証明書の準備
+  - [ ] `ionic capacitor run ios`での動作確認
 
 ### プロジェクト構造の整備
 - [ ] ディレクトリ構造の作成
@@ -49,19 +60,20 @@
 
 ## Phase 2: コアサービス実装
 
-### SSH鍵管理サービス
+### SSH鍵管理サービス（iOS Keychain特化）
 - [x] `key-manager.service.ts`の作成
 - [x] 鍵生成機能の実装
-  - [x] RSA 4096bit鍵ペアの生成
+  - [x] RSA 4096bit鍵ペアの生成（node-forge使用）
   - [x] OpenSSH形式への変換
   - [x] フィンガープリントの計算
-- [x] 鍵保存機能の実装
-  - [x] iOS Keychain統合
-  - [x] Android Keystore統合は未対応（iOSのみ対応）
-  - [x] Web版のフォールバック実装
+- [x] iOS Keychain統合
+  - [x] SecItemAdd/SecItemUpdateによる鍵保存
+  - [x] Touch ID/Face ID連携
+  - [x] アクセス制御（kSecAccessControlBiometryAny）
+  - [x] 開発用Web版のフォールバック実装
 - [x] 鍵取得機能の実装
-  - [x] 生体認証の統合
-  - [x] エラーハンドリング
+  - [x] 生体認証によるアンロック
+  - [x] Keychainエラーハンドリング
 - [x] 鍵削除機能の実装
 - [x] 鍵一覧取得機能の実装
 - [x] 単体テストの作成
@@ -96,7 +108,62 @@
 - [x] プロファイルのバリデーション
 - [x] 単体テストの作成
 
-## Phase 3: UIコンポーネント実装
+## Phase 3: iOS専用バックエンド機能実装（最優先）
+
+### Capacitor SSH Plugin開発（iOS専用）
+- [ ] **カスタムCapacitorプラグインの作成**
+  - [ ] `npm init @capacitor/plugin claude-pal-ssh`でプラグイン雛形作成
+  - [ ] iOS専用プラグインとして設定（Android除外）
+  - [ ] Swift 5.0以上での実装準備
+- [ ] **iOSネイティブSSHライブラリの統合**
+  - [ ] NMSSH（libssh2ベース）の採用検討
+  - [ ] CocoaPodsでの依存関係設定
+  - [ ] Swiftブリッジングヘッダーの設定
+- [ ] **プラグインAPIの設計**
+  - [ ] TypeScript定義ファイルの作成
+  - [ ] iOS実装とのインターフェース定義
+  - [ ] エラーハンドリング設計
+
+### iOS SSH実装（Swift）
+- [ ] **SSH接続機能の実装**
+  - [ ] NMSSHSessionラッパーの作成
+  - [ ] ホスト/ポート/ユーザー名での接続
+  - [ ] パスワード認証の実装
+  - [ ] SSH秘密鍵認証（文字列/Keychain）
+  - [ ] 接続タイムアウトの設定
+- [ ] **シェルセッション管理**
+  - [ ] PTYサイズの設定（行/列）
+  - [ ] シェルチャンネルの開設
+  - [ ] 非同期データストリーム処理
+  - [ ] セッション状態の監視
+- [ ] **データ通信の実装**
+  - [ ] コマンド送信（UTF-8エンコーディング）
+  - [ ] 出力受信（ストリーミング）
+  - [ ] ANSIエスケープシーケンスのパススルー
+  - [ ] バッファ管理とフロー制御
+
+### Capacitorブリッジ実装
+- [ ] **JavaScript⇔Native通信**
+  - [ ] Capacitorプラグインメソッドの実装
+  - [ ] イベントリスナー（データ受信、状態変更）
+  - [ ] Promise/Callbackパターンの実装
+- [ ] **xterm.js統合**
+  - [ ] TerminalサービスでのPlugin使用
+  - [ ] データストリームのxterm.write()への接続
+  - [ ] キーボード入力のPlugin送信
+  - [ ] ウィンドウサイズ変更の同期
+
+### iOS固有機能の活用
+- [ ] **Keychainとの統合**
+  - [ ] SSH秘密鍵のKeychain保存
+  - [ ] Touch ID/Face IDでの鍵アンロック
+  - [ ] 鍵のアクセス制御設定
+- [ ] **バックグラウンド処理**
+  - [ ] Background Modesの設定（必要に応じて）
+  - [ ] セッション維持の検討
+  - [ ] 省電力対応
+
+## Phase 4: UIコンポーネント実装
 
 ### デモUI実装（Tab1）
 - [x] SSH鍵管理デモ画面の作成
@@ -154,7 +221,40 @@
 - [ ] エラー表示
 - [ ] 単体テストの作成
 
-## Phase 4: 画面実装
+## Phase 5: iOS向けデモ画面実装（最小限）
+
+### 接続画面（iOS UIガイドライン準拠）
+- [ ] **基本的な接続フォーム**
+  - [ ] ホスト入力フィールド（iOS標準テキストフィールド）
+  - [ ] ポート入力フィールド（数値キーパッド、デフォルト: 22）
+  - [ ] ユーザー名入力フィールド
+  - [ ] 認証方法選択（セグメントコントロール: パスワード/SSH鍵）
+  - [ ] 接続ボタン（iOS標準スタイル）
+- [ ] **保存済みプロファイル表示**
+  - [ ] iOS標準のTableView風リスト
+  - [ ] スワイプで削除アクション
+  - [ ] タップで選択・接続
+  - [ ] 3D Touchでプレビュー（対応機種）
+
+### ターミナル画面（iOS最適化）
+- [ ] **ターミナル表示**
+  - [ ] xterm.jsの基本統合
+  - [ ] iOS向けフォントサイズ調整
+  - [ ] Safe Areaへの対応
+  - [ ] ダークモード対応
+- [ ] **iOS向け操作**
+  - [ ] ソフトキーボードの最適化
+  - [ ] ツールバーでのよく使うキー（Tab, Ctrl, Esc）
+  - [ ] ピンチジェスチャーでズーム
+  - [ ] 長押しでコンテキストメニュー
+
+### iOS固有のエラー処理
+- [ ] **接続エラーの表示**
+  - [ ] iOS標準のアラート表示
+  - [ ] Haptic Feedbackでの通知
+  - [ ] 再試行ボタン
+
+## Phase 6: 画面実装（本格版）
 
 ### チャット画面
 - [ ] `chat.page.ts`の作成
@@ -211,7 +311,7 @@
 - [ ] アプリ情報
 - [ ] 統合テストの作成
 
-## Phase 5: 高度な機能実装
+## Phase 7: 高度な機能実装
 
 ### コマンドテンプレート
 - [ ] テンプレート管理サービスの作成
@@ -238,7 +338,7 @@
 - [ ] コンテキスト認識
 - [ ] スマート提案機能
 
-## Phase 6: ポリッシュと最適化
+## Phase 8: ポリッシュと最適化
 
 ### パフォーマンス最適化
 - [ ] レイジーローディングの実装
@@ -260,7 +360,7 @@
 - [ ] セキュアストレージの検証
 - [ ] 通信の暗号化確認
 
-## Phase 7: テストとドキュメント
+## Phase 9: テストとドキュメント
 
 ### E2Eテスト
 - [ ] 主要フローのE2Eテスト作成
@@ -281,7 +381,7 @@
 - [ ] 利用規約の作成
 - [ ] アプリ説明文の作成
 
-## Phase 8: デプロイと公開
+## Phase 10: デプロイと公開
 
 ### ビルドと署名
 - [ ] iOS用のProvisioning Profile設定
@@ -303,7 +403,17 @@
 
 ## 優先度
 
-1. **必須機能**（Phase 1-4）: 基本的なSSH接続とUI
-2. **重要機能**（Phase 5）: Claude Code用の最適化
-3. **改善機能**（Phase 6-7）: 品質向上
-4. **リリース**（Phase 8）: ストア公開
+1. **最優先**（Phase 3）: iOS専用SSH接続のネイティブ実装（Capacitorプラグイン開発）
+2. **必須**（Phase 5）: iOS向け最小限のデモUI
+3. **必須**（Phase 1-2,4,6）: 基本的なアプリ構造とiOS最適化UI
+4. **重要**（Phase 7）: Claude Code用のiOS向け最適化
+5. **改善**（Phase 8-9）: 品質向上とiOS固有機能の活用
+6. **リリース**（Phase 10）: App Store公開
+
+## 技術スタック（iOS専用）
+
+- **フロントエンド**: Ionic 8.6 + Angular 20 + Capacitor 7.4
+- **ネイティブ**: Swift 5.0+ / Objective-C（NMSSH）
+- **SSH実装**: カスタムCapacitorプラグイン + NMSSH（libssh2）
+- **セキュリティ**: iOS Keychain Services + Biometric認証
+- **開発環境**: Xcode 15+、iOS 15.0+対応
