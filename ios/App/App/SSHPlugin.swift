@@ -17,10 +17,10 @@ public class SSHPlugin: CAPPlugin {
     private var sessions: [String: SSHSession] = []
     
     /**
-     * SwiftSHのSSHオブジェクトを管理するディクショナリ
-     * キー: セッションID、値: SwiftSH.SSHオブジェクト
+     * SwiftSHのSSHShellオブジェクトを管理するディクショナリ
+     * キー: セッションID、値: SSHShellオブジェクト
      */
-    private var sshConnections: [String: SSH] = []
+    private var sshConnections: [String: SSHShell] = [:]
     
     /**
      * SSH接続を確立する
@@ -136,8 +136,8 @@ public class SSHPlugin: CAPPlugin {
         session.rows = rows
         
         // SwiftSHのシェルのPTYサイズを更新
-        if let ssh = sshConnections[sessionId] {
-            ssh.shell?.setTerminalSize(width: UInt(cols), height: UInt(rows))
+        if let shell = sshConnections[sessionId] {
+            shell.setTerminalSize(width: UInt16(cols), height: UInt16(rows))
         }
         
         call.resolve()
@@ -160,8 +160,10 @@ public class SSHPlugin: CAPPlugin {
         }
         
         // SwiftSHの接続を切断
-        if let ssh = sshConnections[sessionId] {
-            ssh.disconnect()
+        if let shell = sshConnections[sessionId] {
+            shell.disconnect { _ in
+                print("セッション \(sessionId) を切断しました")
+            }
         }
         
         // セッションを削除
@@ -186,15 +188,13 @@ public class SSHPlugin: CAPPlugin {
      * @throws SSHError SSH接続エラー
      */
     private func connectWithSwiftSH(session: SSHSession) throws {
-        // 認証方法に応じてSSHオブジェクトを作成
-        let ssh: SSH
+        // 認証チャレンジを作成
+        let challenge: AuthenticationChallenge
         
         switch session.authType {
         case .password(let password):
-            ssh = SSH(host: session.host, port: session.port)
-            ssh.authenticate(.byPassword(username: session.username, password: password))
+            challenge = .byPassword(username: session.username, password: password)
         case .privateKey(let key, let passphrase):
-            ssh = SSH(host: session.host, port: session.port)
             // プライベートキーを一時ファイルに保存
             let tempKeyPath = NSTemporaryDirectory() + "temp_ssh_key_\(session.id)"
             do {
@@ -202,15 +202,12 @@ public class SSHPlugin: CAPPlugin {
                 // ファイルのパーミッションを600に設定
                 try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: tempKeyPath)
                 
-                if let passphrase = passphrase, !passphrase.isEmpty {
-                    ssh.authenticate(.byPrivateKey(username: session.username, 
-                                                 privateKey: tempKeyPath, 
-                                                 passphrase: passphrase))
-                } else {
-                    ssh.authenticate(.byPrivateKey(username: session.username, 
-                                                 privateKey: tempKeyPath, 
-                                                 passphrase: ""))
-                }
+                challenge = .byPublicKeyFromFile(
+                    username: session.username,
+                    password: passphrase ?? "",
+                    publicKey: "",  // 公開鍵は省略可能
+                    privateKey: tempKeyPath
+                )
                 
                 // 接続後に一時ファイルを削除
                 DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
@@ -223,71 +220,67 @@ public class SSHPlugin: CAPPlugin {
             throw SSHError.missingAuthCredentials
         }
         
-        // 接続を実行
-        ssh.connect { [weak self] error in
-            guard let self = self else { return }
+        // ターミナル設定
+        let terminal = Terminal("xterm-256color", width: UInt16(session.cols), height: UInt16(session.rows))
+        
+        do {
+            // SSHShellを作成
+            let shell = try SSHShell(host: session.host, port: UInt16(session.port), terminal: terminal)
             
-            if let error = error {
-                print("SSH接続エラー: \(error)")
-                DispatchQueue.main.async {
-                    self.notifyListeners("connectionStateChanged", data: [
-                        "sessionId": session.id,
-                        "state": "error",
-                        "error": error.localizedDescription
-                    ])
-                }
-            } else {
-                // 接続成功
-                self.sshConnections[session.id] = ssh
+            // 接続と認証をチェーンして実行
+            shell.withCallback { [weak self] (data, error) in
+                guard let self = self else { return }
                 
-                // 接続成功を通知
-                DispatchQueue.main.async {
-                    self.notifyListeners("connectionStateChanged", data: [
-                        "sessionId": session.id,
-                        "state": "connected"
-                    ])
+                if let error = error {
+                    print("SSHエラー: \(error)")
+                    DispatchQueue.main.async {
+                        self.notifyListeners("connectionStateChanged", data: [
+                            "sessionId": session.id,
+                            "state": "error",
+                            "error": error.localizedDescription
+                        ])
+                    }
+                    return
                 }
                 
-                // シェルを開く
-                ssh.openShell { (error, shell) in
-                    if let error = error {
-                        print("シェルオープンエラー: \(error)")
-                        return
-                    }
-                    
-                    guard let shell = shell else {
-                        print("シェルの取得に失敗")
-                        return
-                    }
-                    
-                    // PTYサイズを設定
-                    shell.setTerminalSize(width: UInt(session.cols), height: UInt(session.rows))
-                    
-                    // データ受信ハンドラを設定
-                    shell.onData = { data in
-                        if let text = String(data: data, encoding: .utf8) {
-                            DispatchQueue.main.async {
-                                self.notifyListeners("dataReceived", data: [
-                                    "sessionId": session.id,
-                                    "data": text
-                                ])
-                            }
-                        }
-                    }
-                    
-                    // エラーハンドラを設定
-                    shell.onError = { error in
-                        print("シェルエラー: \(error)")
-                        DispatchQueue.main.async {
-                            self.notifyListeners("connectionStateChanged", data: [
-                                "sessionId": session.id,
-                                "state": "error",
-                                "error": error.localizedDescription
-                            ])
-                        }
+                if let data = data {
+                    let text = String(data: data, encoding: .utf8) ?? ""
+                    DispatchQueue.main.async {
+                        self.notifyListeners("dataReceived", data: [
+                            "sessionId": session.id,
+                            "data": text
+                        ])
                     }
                 }
             }
+            .connect()
+            .authenticate(challenge)
+            .open { [weak self] error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("シェルオープンエラー: \(error)")
+                    DispatchQueue.main.async {
+                        self.notifyListeners("connectionStateChanged", data: [
+                            "sessionId": session.id,
+                            "state": "error",
+                            "error": error.localizedDescription
+                        ])
+                    }
+                } else {
+                    // 接続成功
+                    self.sshConnections[session.id] = shell
+                    
+                    DispatchQueue.main.async {
+                        self.notifyListeners("connectionStateChanged", data: [
+                            "sessionId": session.id,
+                            "state": "connected"
+                        ])
+                    }
+                }
+            }
+        } catch {
+            throw SSHError.connectionFailed(error.localizedDescription)
         }
     }
     
@@ -298,18 +291,13 @@ public class SSHPlugin: CAPPlugin {
      * @param command 送信するコマンド
      */
     private func sendCommandWithSwiftSH(session: SSHSession, command: String) {
-        guard let ssh = sshConnections[session.id] else {
+        guard let shell = sshConnections[session.id] else {
             print("SSH接続が見つかりません: \(session.id)")
             return
         }
         
         // シェルにコマンドを送信
-        guard let data = command.data(using: .utf8) else {
-            print("コマンドのエンコードに失敗")
-            return
-        }
-        
-        ssh.shell?.write(data) { error in
+        shell.write(command) { error in
             if let error = error {
                 print("コマンド送信エラー: \(error)")
             }
