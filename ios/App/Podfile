@@ -24,7 +24,16 @@ end
 target 'App' do
   capacitor_pods
   # Add your Pods here
+  
+  # SSH接続ライブラリ (libssh2ベース)
+  pod 'GZ-SwiftSH', '~> 1.3'
 end
+
+# テストターゲットが作成されたら、以下のコメントを解除してください
+# target 'AppTests' do
+#   inherit! :search_paths
+#   # テスト用の追加依存関係があればここに記述
+# end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
